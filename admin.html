@@ -16,7 +16,12 @@
 </style>
 </head>
 <body>
+<div id="enocSoundPrompt" style="position:fixed;right:16px;bottom:16px;z-index:99999;background:#0b1730;color:#fff;padding:12px 14px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;gap:10px;align-items:center;font-size:13px">
+<span>🔔 Activa el sonido para avisos de pedidos</span><button id="enocSoundBtn" style="border:0;border-radius:9px;padding:8px 11px;background:#fff;color:#0b1730;font-weight:700;cursor:pointer">Activar</button>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <div class="shell">
   <header class="top glass">
@@ -52,7 +57,7 @@
 
     <main>
       <section id="dashboard" class="section active">
-        <div class="hero"><h1>Dashboard</h1><p>Resumen general conectado a Supabase</p></div>
+        <div class="hero"><h1>Dashboard</h1><p>Resumen general conectado a Supabase</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button id="enocNotifyBtn" class="primary" onclick="enableENOCNotifications()">🔔 Activar notificaciones</button><button id="enocSoundBtn" class="admin-btn" type="button" onclick="testENOCSound()">🔊 Probar sonido</button></div><div id="enocNotifyStatus" style="margin-top:8px;font-size:13px;color:#52627e">Estado: sin activar</div></div>
         <div class="stats">
           <div class="card glass"><div class="stat-label">Ventas</div><div id="statSales" class="stat-value">$0.00</div><div class="delta">Pedidos registrados</div></div>
           <div class="card glass"><div class="stat-label">Pedidos</div><div id="statOrders" class="stat-value">0</div><div class="delta">Total en Supabase</div></div>
@@ -80,7 +85,7 @@
         <div class="card glass">
           <div class="cardhead">
             <div><h2>Catálogo</h2><div class="sub">Productos, precios, imágenes y estado</div></div>
-            <button class="primary" onclick="openProductModal()">+ Nuevo producto</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="admin-btn" onclick="downloadProductTemplate()">⬇ Plantilla Excel</button><button class="admin-btn" onclick="document.getElementById('excelProductsFile').click()">📥 Importar Excel</button><input id="excelProductsFile" type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importProductsExcel(event)"><button class="primary" onclick="openProductModal()">+ Nuevo producto</button></div>
           </div>
           <div style="overflow:auto"><table class="table">
             <thead><tr><th>SKU</th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Estado</th><th>Acciones</th></tr></thead>
@@ -161,7 +166,7 @@
             <div class="field"><label>Título</label><input id="identityTitle" value="Viste tu identidad"></div>
             <div class="field"><label>Texto superior</label><input id="identityTop" value="ENOC · Nueva colección"></div>
             <div class="field full"><label>Descripción</label><textarea id="identityDescription">Explora el catálogo, selecciona talla y color y arma tu pedido desde el teléfono o la computadora.</textarea></div>
-            <div class="field full"><label>Imagen del hero</label><input id="heroImageFile" type="file" accept="image/jpeg,image/png,image/webp" onchange="previewHeroImage(event)"><small style="color:#667794">La imagen se guarda en Supabase Storage y reemplaza la imagen principal del catálogo.</small><div id="heroImagePreview" style="margin-top:10px"></div></div>
+            <div class="field full"><label>Banners del hero</label><input id="heroImageFile" type="file" accept="image/jpeg,image/png,image/webp" multiple onchange="previewHeroImages(event)"><small style="color:#667794">Puedes seleccionar varias imágenes a la vez. En el catálogo aparecerán como un carrusel deslizable de izquierda a derecha. Al guardar, esta selección reemplaza el conjunto actual de banners.</small><div id="heroImagePreview" style="margin-top:10px"></div></div>
           </div>
           <div class="admin-actions-row"><button class="primary" onclick="saveDesign()">Guardar diseño</button></div>
           <div id="saved" class="note"></div>
@@ -198,6 +203,7 @@
             <div class="field"><label>Banco de Pago Móvil</label><input id="cfgPagoBanco" placeholder="Banco de Venezuela"></div>
             <div class="field"><label>Teléfono de Pago Móvil</label><input id="cfgPagoTelefono" placeholder="0412..." inputmode="tel"></div>
             <div class="field"><label>Cédula / RIF de Pago Móvil</label><input id="cfgPagoCedula" placeholder="V-12345678"></div>
+            <div class="field full" style="display:flex;align-items:center;justify-content:space-between;gap:14px;border:1px solid #d9e0ea;border-radius:14px;padding:14px;background:#f8fbff"><div><label style="margin:0">Cashea</label><small style="display:block;color:#667794;margin-top:4px">Activa o desactiva Cashea en el catálogo público sin tocar los demás métodos de pago.</small></div><label style="display:flex;align-items:center;gap:8px;font-weight:700"><input id="cfgCasheaEnabled" type="checkbox" style="width:20px;height:20px"> Mostrar Cashea</label></div>
             <div class="field"><label>ID de Binance</label><input id="cfgBinanceId" placeholder="ID de Binance"></div>
             <div class="field"><label>Correo de Binance</label><input id="cfgBinanceEmail" type="email" placeholder="correo@ejemplo.com"></div>
           </div>
@@ -318,6 +324,158 @@ function money(v){ return "$"+Number(v||0).toFixed(2); }
 function fmtDate(v){ try{return new Date(v).toLocaleString("es-VE");}catch{return v||"—";} }
 function setText(id,value){ const el=document.getElementById(id); if(el) el.textContent=String(value ?? ""); }
 
+let enocRealtimeChannel=null;
+let enocOrderPollTimer=null;
+let enocKnownOrderIds=new Set();
+let enocNotificationsEnabled=false;
+let enocAudioContext=null;
+let enocAudioReady=false;
+
+async function unlockENOCSound(){
+  try{
+    const Ctx=window.AudioContext||window.webkitAudioContext;
+    if(!Ctx) return false;
+    if(!enocAudioContext) enocAudioContext=new Ctx();
+    if(enocAudioContext.state==='suspended') await enocAudioContext.resume();
+    enocAudioReady=enocAudioContext.state==='running';
+    return enocAudioReady;
+  }catch(e){ return false; }
+}
+
+function testENOCSound(){
+  unlockENOCSound().then(ok=>{
+    const status=document.getElementById('enocNotifyStatus');
+    if(ok && playENOCOrderSound()){
+      if(status) status.textContent='Estado: 🔊 Sonido de prueba reproducido';
+    }else{
+      if(status) status.textContent='Estado: ⚠️ No se pudo reproducir el sonido. Revisa el volumen/salida de audio del equipo.';
+    }
+  });
+}
+
+function playENOCOrderSound(){
+  try{
+    if(!enocAudioReady || !enocAudioContext) return false;
+    const ctx=enocAudioContext, now=ctx.currentTime;
+    const gain=ctx.createGain();
+    gain.gain.setValueAtTime(0.001,now);
+    gain.gain.exponentialRampToValueAtTime(0.55,now+0.03);
+    gain.gain.exponentialRampToValueAtTime(0.001,now+0.75);
+    gain.connect(ctx.destination);
+    [880,1175,880].forEach((freq,i)=>{
+      const o=ctx.createOscillator(); o.type='sine'; o.frequency.value=freq; o.connect(gain);
+      o.start(now+i*0.18); o.stop(now+i*0.18+0.16);
+    });
+    return true;
+  }catch(e){ return false; }
+}
+
+async function enableENOCNotifications(){
+  const btn=document.getElementById('enocNotifyBtn');
+  const status=document.getElementById('enocNotifyStatus');
+  try{
+    await unlockENOCSound();
+    if(!('Notification' in window)){
+      if(status) status.textContent='Estado: este navegador no admite notificaciones.';
+      if(btn) btn.textContent='🔔 No disponible';
+      return false;
+    }
+    if(!window.isSecureContext && location.protocol !== 'https:'){
+      if(status) status.textContent='Estado: abre el Dashboard desde HTTPS (GitHub Pages/Netlify) para activar notificaciones.';
+      if(btn) btn.textContent='🔒 Requiere HTTPS';
+      toast('Las notificaciones requieren HTTPS.',false);
+      return false;
+    }
+    let permission=Notification.permission;
+    if(permission==='default') permission=await Notification.requestPermission();
+    enocNotificationsEnabled=(permission==='granted');
+    if(enocNotificationsEnabled){
+      if(status) status.textContent='Estado: ✅ Notificaciones activadas';
+      if(btn){btn.textContent='✅ Notificaciones activadas'; btn.disabled=true; btn.style.opacity='.75';}
+      toast('Notificaciones activadas.',true);
+      playENOCOrderSound();
+      return true;
+    }
+    if(permission==='denied'){
+      if(status) status.textContent='Estado: ⚠️ Bloqueadas por el navegador. Debes permitirlas en la configuración del sitio.';
+      if(btn) btn.textContent='⚠️ Notificaciones bloqueadas';
+    }else{
+      if(status) status.textContent='Estado: ⚠️ No se concedió el permiso.';
+      if(btn) btn.textContent='🔔 Intentar de nuevo';
+    }
+    return false;
+  }catch(e){
+    if(status) status.textContent='Estado: ⚠️ No se pudo activar: '+(e?.message||'permiso rechazado');
+    if(btn) btn.textContent='🔔 Intentar de nuevo';
+    return false;
+  }
+}
+
+function showENOCNewOrderNotification(order){
+  const number=order?.order_number || order?.id || 'Nuevo pedido';
+  const customer=order?.customer_name || 'Cliente';
+  const total=order?.total!=null ? '$'+Number(order.total||0).toFixed(2) : '';
+  const body = `${customer}${total ? ' · '+total : ''}`;
+
+  // La alerta se muestra tanto si el Dashboard está visible como si está en segundo plano.
+  if(enocNotificationsEnabled && 'Notification' in window){
+    try{
+      new Notification('🔔 Nuevo pedido ENOC', {
+        body: body || 'Hay una nueva solicitud de pedido.',
+        tag:'enoc-new-order-'+number,
+        renotify:true
+      });
+    }catch(e){}
+  }
+  const toastEl=document.getElementById('toast');
+  if(toastEl){
+    toast('🔔 Nuevo pedido '+number+(total?' · '+total:''),true);
+  }
+  // Si el panel está abierto, reproducimos el sonido desbloqueado por el usuario.
+  if(document.visibilityState==='visible') playENOCOrderSound();
+}
+
+function handleENOCNewOrder(order){
+  if(!order?.id || enocKnownOrderIds.has(order.id)) return false;
+  enocKnownOrderIds.add(order.id);
+  showENOCNewOrderNotification(order);
+  try{ loadOrders(); loadDashboard(); }catch(e){}
+  return true;
+}
+
+function startENOCOrderRealtime(){
+  try{
+    if(enocRealtimeChannel) supabaseClient.removeChannel(enocRealtimeChannel);
+    enocRealtimeChannel=supabaseClient.channel('enoc-orders-realtime')
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'orders'},payload=>{
+        handleENOCNewOrder(payload.new||{});
+      })
+      .subscribe((status)=>{
+        console.log('ENOC Realtime orders:',status);
+      });
+  }catch(e){ console.error('ENOC Realtime:',e); }
+}
+
+// Respaldo: detecta nuevos pedidos consultando Supabase cada 3 segundos.
+// Así las alertas funcionan incluso si la tabla orders no está incluida en
+// la publicación de Supabase Realtime. No modifica ni crea pedidos.
+function startENOCOrderPolling(){
+  if(enocOrderPollTimer) clearInterval(enocOrderPollTimer);
+  const poll=async()=>{
+    try{
+      const {data,error}=await supabaseClient
+        .from('orders')
+        .select('id,order_number,customer_name,total,created_at')
+        .order('created_at',{ascending:false})
+        .limit(25);
+      if(error){ console.error('ENOC polling orders:',error); return; }
+      (data||[]).reverse().forEach(order=>handleENOCNewOrder(order));
+    }catch(e){ console.error('ENOC polling:',e); }
+  };
+  poll();
+  enocOrderPollTimer=setInterval(poll,3000);
+}
+
 async function checkSession(){
   const {data:{session}}=await supabaseClient.auth.getSession();
   if(!session){
@@ -327,6 +485,16 @@ async function checkSession(){
   }
   const userEl=document.getElementById("currentUser");
   if(userEl) userEl.innerHTML = "<b>Sesión Supabase:</b> "+esc(session.user.email || session.user.id);
+  try{
+    const permission = ('Notification' in window) ? Notification.permission : 'unsupported';
+    const status=document.getElementById('enocNotifyStatus');
+    const btn=document.getElementById('enocNotifyBtn');
+    if(permission==='granted'){ enocNotificationsEnabled=true; if(status) status.textContent='Estado: ✅ Notificaciones ya permitidas'; if(btn){btn.textContent='✅ Notificaciones activadas';btn.disabled=true;btn.style.opacity='.75';} }
+    else if(permission==='denied'){ if(status) status.textContent='Estado: ⚠️ Bloqueadas por el navegador. Debes permitirlas en la configuración del sitio.'; if(btn) btn.textContent='⚠️ Notificaciones bloqueadas'; }
+  }catch(e){}
+  try{ const {data:recent}=await supabaseClient.from("orders").select("id").order("created_at",{ascending:false}).limit(100); (recent||[]).forEach(o=>o?.id&&enocKnownOrderIds.add(o.id)); }catch(e){}
+  startENOCOrderRealtime();
+  startENOCOrderPolling();
   return true;
 }
 function logout(){
@@ -391,6 +559,71 @@ async function deleteCategory(id){
   await loadCategories();
   await loadProducts();
   await loadDashboard();
+}
+
+function excelNormalize(value){
+  return String(value==null?"":value).trim();
+}
+function excelBool(value){
+  const v=excelNormalize(value).toLowerCase();
+  if(!v) return true;
+  return !["false","0","no","inactivo","inactive","no disponible"].includes(v);
+}
+function excelSlug(name){
+  return excelNormalize(name).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+}
+function downloadProductTemplate(){
+  if(!window.XLSX){toast("No se pudo cargar el módulo Excel. Recarga el Dashboard.",false);return;}
+  const rows=[
+    {SKU:"BER-001",Nombre:"Bermuda ENOC",Categoria:"Bermudas",Precio_USD:35,Descripcion:"",Activo:true},
+    {SKU:"CAM-001",Nombre:"Camisa ENOC",Categoria:"Camisas",Precio_USD:40,Descripcion:"",Activo:true}
+  ];
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws["!cols"]=[{wch:16},{wch:28},{wch:20},{wch:14},{wch:40},{wch:10}];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Productos");
+  XLSX.writeFile(wb,"ENOC_plantilla_productos.xlsx");
+}
+async function importProductsExcel(event){
+  const file=event.target.files?.[0]; event.target.value="";
+  if(!file) return;
+  if(!window.XLSX){toast("No se pudo cargar el módulo Excel. Recarga el Dashboard.",false);return;}
+  try{
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:"array"});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{defval:""});
+    if(!rows.length){toast("El Excel no contiene filas de productos.",false);return;}
+    const aliases=(row,keys)=>{for(const k of keys){if(Object.prototype.hasOwnProperty.call(row,k)) return row[k];}return ""};
+    let created=0,updated=0,failed=0; const errors=[];
+    const categoryCache=new Map(categories.map(c=>[String(c.name||"").trim().toLowerCase(),c]));
+    for(let i=0;i<rows.length;i++){
+      const row=rows[i];
+      const sku=excelNormalize(aliases(row,["SKU","sku","Sku"]));
+      const name=excelNormalize(aliases(row,["Nombre","nombre","Name","Producto"]));
+      const catName=excelNormalize(aliases(row,["Categoria","Categoría","categoria","Category"]));
+      const priceRaw=aliases(row,["Precio_USD","Precio USD","Precio","price"]);
+      const price=Number(String(priceRaw).replace(",","."));
+      if(!sku || !name || !catName || !Number.isFinite(price)){failed++;errors.push(`Fila ${i+2}: SKU, Nombre, Categoria y Precio_USD son obligatorios.`);continue;}
+      let cat=categoryCache.get(catName.toLowerCase());
+      if(!cat){
+        const slug=excelSlug(catName);
+        const {data,error}=await supabaseClient.from("categories").insert({name:catName,slug}).select("id,name").single();
+        if(error){failed++;errors.push(`Fila ${i+2}: no se pudo crear la categoría ${catName}: ${error.message}`);continue;}
+        cat=data; categoryCache.set(catName.toLowerCase(),cat); categories.push(cat);
+      }
+      const payload={sku,name,category_id:cat.id,price,description:excelNormalize(aliases(row,["Descripcion","Descripción","description"])),active:excelBool(aliases(row,["Activo","activo","Active"])),updated_at:new Date().toISOString()};
+      const {data:existing,error:findErr}=await supabaseClient.from("products").select("id").eq("sku",sku).maybeSingle();
+      if(findErr){failed++;errors.push(`Fila ${i+2}: ${findErr.message}`);continue;}
+      let result;
+      if(existing?.id){result=await supabaseClient.from("products").update(payload).eq("id",existing.id);updated++;}
+      else{result=await supabaseClient.from("products").insert(payload);created++;}
+      if(result.error){failed++; if(existing?.id) updated--; else created--; errors.push(`Fila ${i+2} (${sku}): ${result.error.message}`);}
+    }
+    await loadCategories(); await loadProducts(); await loadDashboard();
+    let msg=`Importación terminada: ${created} creados, ${updated} actualizados, ${failed} con error.`;
+    if(errors.length) msg += "\n\n"+errors.slice(0,8).join("\n");
+    alert(msg);
+  }catch(e){console.error(e);toast("No se pudo leer el Excel: "+(e.message||e),false);}
 }
 
 async function loadProducts(){
@@ -1063,16 +1296,16 @@ async function loadDashboard(){
   }
 }
 
-function previewHeroImage(e){
-  const file=e.target.files?.[0];
+function previewHeroImages(e){
+  const files=[...(e.target.files||[])];
   const box=document.getElementById("heroImagePreview");
-  if(!file){box.innerHTML="";return;}
-  if(!["image/jpeg","image/png","image/webp"].includes(file.type)){toast("Solo JPG, PNG o WEBP.",false);e.target.value="";return;}
-  if(file.size>10*1024*1024){toast("La imagen no puede superar 10 MB.",false);e.target.value="";return;}
-  const url=URL.createObjectURL(file);
-  box.innerHTML=`<img src="${url}" style="display:block;width:100%;max-width:720px;max-height:280px;object-fit:cover;border-radius:14px;border:1px solid #d9e0ea">`;
+  if(!files.length){box.innerHTML="";return;}
+  const valid=files.filter(f=>["image/jpeg","image/png","image/webp"].includes(f.type) && f.size<=10*1024*1024);
+  if(valid.length!==files.length){toast("Solo JPG, PNG o WEBP de hasta 10 MB por imagen.",false);}
+  if(!valid.length){e.target.value="";box.innerHTML="";return;}
+  box.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">${valid.map((file,i)=>`<div style="position:relative;border:1px solid #d9e0ea;border-radius:14px;overflow:hidden;background:#f5f7fb"><img src="${URL.createObjectURL(file)}" alt="Banner ${i+1}" style="display:block;width:100%;aspect-ratio:16/9;object-fit:cover"><span style="position:absolute;left:7px;bottom:7px;padding:4px 7px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff;font-size:10px;font-weight:800">Banner ${i+1}</span></div>`).join("")}</div><div style="margin-top:9px;color:#667794;font-size:12px">${valid.length} banner${valid.length===1?'':'es'} seleccionado${valid.length===1?'':'s'}.</div>`;
 }
-async function uploadHeroImage(file){
+async function uploadHeroImage(file,slot=0){
   const img=await new Promise((resolve,reject)=>{
     const i=new Image();
     i.onload=()=>resolve(i);
@@ -1096,39 +1329,38 @@ async function uploadHeroImage(file){
     )
   );
 
-  const path="store/hero.webp";
+  const safeName=(file.name||"banner").toLowerCase().replace(/[^a-z0-9_-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,45)||"banner";
+  const path=`store/banners/${Date.now()}-${slot}-${safeName}.webp`;
   const {error}=await supabaseClient.storage.from("product-images").upload(
-    path,blob,{cacheControl:"31536000",upsert:true,contentType:"image/webp"}
+    path,blob,{cacheControl:"31536000",upsert:false,contentType:"image/webp"}
   );
-  if(error) throw new Error("No se pudo guardar la imagen del hero: "+error.message);
+  if(error) throw new Error("No se pudo guardar el banner: "+error.message);
 
   const publicUrl=supabaseClient.storage.from("product-images").getPublicUrl(path).data.publicUrl;
-  if(!publicUrl) throw new Error("Supabase no devolvió la URL pública del hero.");
+  if(!publicUrl) throw new Error("Supabase no devolvió la URL pública del banner.");
   return publicUrl;
 }
 async function saveDesign(){
   try{
-    const file=document.getElementById("heroImageFile")?.files?.[0];
-    let heroUrl="";
-    if(file){
-      heroUrl=await uploadHeroImage(file);
-      document.getElementById("heroImageFile").value="";
-
+    const files=[...(document.getElementById("heroImageFile")?.files||[])].filter(f=>["image/jpeg","image/png","image/webp"].includes(f.type) && f.size<=10*1024*1024);
+    let heroUrls=[];
+    if(files.length){
+      document.getElementById("saved").textContent=`Subiendo ${files.length} banner${files.length===1?'':'es'}…`;
+      heroUrls=await Promise.all(files.map((file,i)=>uploadHeroImage(file,i)));
       const current=await loadStoreSettings();
-      const payload={hero_image_url:heroUrl,updated_at:new Date().toISOString()};
+      const payload={hero_image_url:JSON.stringify(heroUrls),updated_at:new Date().toISOString()};
       const result=current?.id
         ? await supabaseClient.from("store_settings").update(payload).eq("id",current.id).select().single()
         : await supabaseClient.from("store_settings").insert(payload).select().single();
 
       if(result.error){
-        throw new Error("La imagen se subió, pero no se pudo guardar la URL en Supabase: "+result.error.message);
+        throw new Error("Los banners se subieron, pero no se pudo guardar la configuración: "+result.error.message);
       }
 
-      // Show the actual public Storage URL, not only the local blob preview.
+      document.getElementById("heroImageFile").value="";
       const preview=document.getElementById("heroImagePreview");
       if(preview){
-        preview.innerHTML=`<img src="${heroUrl}" alt="Hero guardado"
-          style="display:block;width:100%;max-width:720px;max-height:280px;object-fit:cover;border-radius:14px;border:1px solid #d9e0ea">`;
+        preview.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">${heroUrls.map((url,i)=>`<div style="border:1px solid #d9e0ea;border-radius:14px;overflow:hidden;background:#f5f7fb"><img src="${url}" alt="Banner guardado ${i+1}" style="display:block;width:100%;aspect-ratio:16/9;object-fit:cover"><div style="padding:7px 8px;font-size:11px;font-weight:800;color:#344054">Banner ${i+1}</div></div>`).join("")}</div>`;
       }
     }
 
@@ -1136,15 +1368,34 @@ async function saveDesign(){
     localStorage.setItem("enoc_identity_top",document.getElementById("identityTop").value);
     localStorage.setItem("enoc_identity_description",document.getElementById("identityDescription").value);
 
-    document.getElementById("saved").textContent=heroUrl
-      ? "Diseño e imagen del hero guardados en Supabase."
+    document.getElementById("saved").textContent=heroUrls.length
+      ? `${heroUrls.length} banner${heroUrls.length===1?'':'es'} guardado${heroUrls.length===1?'':'s'} en Supabase. El catálogo permitirá deslizar entre ellos.`
       : "Diseño guardado.";
-    toast("Diseño actualizado.");
+    toast(heroUrls.length ? "Banners guardados correctamente." : "Diseño actualizado.");
   }catch(error){
     console.error(error);
     toast(error.message||"No se pudo guardar el diseño.",false);
   }
 }
+function parseStoredHeroBanners(raw){
+  const value=String(raw||"").trim();
+  if(!value) return [];
+  if(value.startsWith("[")){
+    try{ const arr=JSON.parse(value); if(Array.isArray(arr)) return arr.filter(Boolean).map(String); }catch(_){ }
+  }
+  return [value];
+}
+async function loadDesignBanners(){
+  try{
+    const current=await supabaseClient.from("store_settings").select("hero_image_url").order("updated_at",{ascending:false}).limit(1).maybeSingle();
+    if(current.error || !current.data) return;
+    const urls=parseStoredHeroBanners(current.data.hero_image_url);
+    const box=document.getElementById("heroImagePreview");
+    if(!box || !urls.length) return;
+    box.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">${urls.map((url,i)=>`<div style="border:1px solid #d9e0ea;border-radius:14px;overflow:hidden;background:#f5f7fb"><img src="${url}" alt="Banner actual ${i+1}" style="display:block;width:100%;aspect-ratio:16/9;object-fit:cover"><div style="padding:7px 8px;font-size:11px;font-weight:800;color:#344054">Banner actual ${i+1}</div></div>`).join("")}</div><div style="margin-top:9px;color:#667794;font-size:12px">${urls.length} banner${urls.length===1?'':'es'} actualmente publicado${urls.length===1?'':'s'}.</div>`;
+  }catch(err){ console.warn("ENOC / loadDesignBanners:",err); }
+}
+
 async function loadAutomaticBCVRateAdmin(){
   const input = document.getElementById("cfgRate");
   if(!input) return;
@@ -1174,7 +1425,7 @@ async function loadAutomaticBCVRateAdmin(){
 async function loadStoreSettings(){
   const {data, error}=await supabaseClient
     .from("store_settings")
-    .select("id, whatsapp, whatsapp_1_url, whatsapp_2_url, pago_movil_banco, pago_movil_telefono, pago_movil_cedula, binance_id, binance_email, hero_image_url, updated_at")
+    .select("id, whatsapp, whatsapp_1_url, whatsapp_2_url, pago_movil_banco, pago_movil_telefono, pago_movil_cedula, binance_id, binance_email, hero_image_url, cashea_enabled, updated_at")
     .order("updated_at", {ascending:false})
     .limit(1)
     .maybeSingle();
@@ -1191,6 +1442,7 @@ async function loadStoreSettings(){
     document.getElementById("cfgPagoCedula").value=data.pago_movil_cedula||"";
     document.getElementById("cfgBinanceId").value=data.binance_id||"";
     document.getElementById("cfgBinanceEmail").value=data.binance_email||"";
+    document.getElementById("cfgCasheaEnabled").checked = data.cashea_enabled !== false;
   }
   return data||null;
 }
@@ -1205,6 +1457,7 @@ async function saveConfig(){
     pago_movil_cedula:document.getElementById("cfgPagoCedula").value.trim(),
     binance_id:document.getElementById("cfgBinanceId").value.trim(),
     binance_email:document.getElementById("cfgBinanceEmail").value.trim(),
+    cashea_enabled:document.getElementById("cfgCasheaEnabled").checked,
     updated_at:new Date().toISOString()
   };
   const current=await loadStoreSettings();
@@ -1229,6 +1482,7 @@ async function saveConfig(){
 (async function init(){
   const ok=await checkSession(); if(!ok)return;
   await loadStoreSettings();
+  await loadDesignBanners();
   await loadAutomaticBCVRateAdmin();
   try{
     await loadCategories();
@@ -1245,6 +1499,15 @@ setInterval(async()=>{
     try{ await loadOrders(); }catch(e){}
   }
 },15000);
+</script>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+ const box=document.getElementById('enocSoundPrompt'),btn=document.getElementById('enocSoundBtn');
+ const hide=()=>{if(box) box.style.display='none';};
+ btn?.addEventListener('click',async()=>{const ok=await unlockENOCSound();if(ok){playENOCOrderSound();hide();}});
+ const first=async()=>{if(await unlockENOCSound()){hide();document.removeEventListener('pointerdown',first);}};
+ document.addEventListener('pointerdown',first);
+});
 </script>
 </body>
 </html>
