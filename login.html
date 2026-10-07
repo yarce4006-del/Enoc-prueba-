@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ENOC | Acceso privado</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:Inter,Arial,sans-serif;background:linear-gradient(135deg,#07101f,#1238ff);display:grid;place-items:center;color:#111827}
+.login{width:min(420px,calc(100% - 32px));background:#fff;border-radius:22px;padding:32px;box-shadow:0 25px 70px #0005}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.mark{width:46px;height:46px;border-radius:12px;background:#1238ff;color:#fff;display:grid;place-items:center;font-weight:900;font-size:24px}
+.brand b{font-size:24px}.brand small{display:block;color:#6b7280;margin-top:2px}
+.eyebrow{font-size:11px;font-weight:900;letter-spacing:1.4px;color:#1238ff;text-transform:uppercase}
+h1{font-size:28px;margin:7px 0 8px}.sub{color:#6b7280;font-size:14px;margin-bottom:24px}
+.field{margin-bottom:15px}.field label{display:block;font-size:12px;font-weight:800;margin-bottom:7px}
+.field input{width:100%;padding:13px 14px;border:1px solid #d9dee8;border-radius:11px;font-size:15px;outline:none}
+.field input:focus{border-color:#1238ff;box-shadow:0 0 0 3px #1238ff18}
+.btn{width:100%;border:0;border-radius:11px;padding:14px;background:#1238ff;color:#fff;font-weight:900;font-size:14px;cursor:pointer}
+.btn:disabled{opacity:.65;cursor:wait}.error{min-height:18px;color:#dc2626;font-size:12px;font-weight:700;margin:10px 0}
+.back{display:block;text-align:center;margin-top:18px;color:#6b7280;text-decoration:none;font-size:12px}
+.note{margin-top:22px;padding:12px;border-radius:10px;background:#f4f6fa;color:#667085;font-size:11px;line-height:1.5}
+</style>
+</head>
+<body>
+<main class="login">
+  <div class="brand"><div class="mark">E</div><div><b>ENOC</b><small>Administración privada</small></div></div>
+  <div class="eyebrow">Acceso restringido</div>
+  <h1>Iniciar sesión</h1>
+  <div class="sub">Ingresa para administrar productos, pedidos, inventario y ventas.</div>
+  <form id="loginForm">
+    <div class="field"><label>Usuario</label><input id="user" autocomplete="username" required></div>
+    <div class="field"><label>Contraseña</label><input id="pass" type="password" autocomplete="current-password" required></div>
+    <div id="error" class="error"></div>
+    <button id="submitBtn" class="btn" type="submit">Entrar al panel</button>
+  </form>
+  <a class="back" href="index.html">← Volver al catálogo</a>
+  <div class="note">El acceso utiliza Supabase Auth. El usuario se convierte en el correo de autenticación de Supabase y la contraseña se valida directamente contra Supabase.</div>
+</main>
+
+<script>
+const SUPABASE_URL = "https://huspfcjzqedmpavcgfxe.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_GtIoX74VZQg1ezFvVCGlxA_YoFSYq1m";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+document.getElementById("loginForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+
+  const user = document.getElementById("user").value.trim();
+  const pass = document.getElementById("pass").value;
+  const error = document.getElementById("error");
+  const btn = document.getElementById("submitBtn");
+
+  error.textContent = "";
+  btn.disabled = true;
+  btn.textContent = "Verificando…";
+
+  // Si se escribe solo el nombre de usuario, se transforma al correo
+  // administrativo usado por Supabase Auth.
+  const email = user.includes("@") ? user : user + "@enoc.local";
+
+  const { error: authError } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password: pass
+  });
+
+  if (authError) {
+    error.textContent = "Usuario o contraseña incorrectos.";
+    btn.disabled = false;
+    btn.textContent = "Entrar al panel";
+    return;
+  }
+
+  // El administrador comprueba esta misma sesión mediante Supabase Auth.
+  sessionStorage.removeItem("enoc_admin_session");
+  location.replace("admin.html");
+});
+</script>
+</body>
+</html>
