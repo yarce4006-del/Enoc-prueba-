@@ -1,8 +1,8 @@
-ENOC V59 — Carrusel final
+ENOC V68 — flujo de compra directo
 
-- Transición deslizante suave.
-- Flechas anterior/siguiente funcionales mediante eventos nativos.
-- Puntos funcionales mediante delegación de eventos.
-- Swipe táctil y arrastre con mouse.
-- Autoplay cada 5 segundos; interacción manual reinicia el temporizador.
-- Lógica de productos, Supabase, pagos, Cashea y WhatsApp preservada desde V58.
+Base: V67.
+- Se reemplazó “Previsualizar selección” por “Agregar al carrito”.
+- El botón agrega inmediatamente las tallas/colores seleccionados.
+- El modal de producto permanece abierto para poder cambiar de modelo y agregar más artículos.
+- El carrito conserva cada modelo/talla/color como línea independiente.
+- El resumen completo sigue apareciendo al finalizar el pedido.
