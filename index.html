@@ -2523,7 +2523,7 @@ function requestCasheaWhatsApp(){
   if(!data)return;
   const choice=document.getElementById("paymentChoice");
   if(choice) choice.classList.remove("open");
-  const text=buildOrderText(data)+"\\n\\nQuiero pagar con Cashea. Por favor indíquenme cómo continuar.";
+  const text=buildOrderText(data)+"\n\nQuiero pagar con Cashea. Por favor indíquenme cómo continuar.";
   const summary=document.getElementById("orderSummary");
   if(summary) summary.textContent=text;
   const chooser=document.getElementById("whatsappChooser");
@@ -2538,7 +2538,7 @@ function sendCasheaToWhatsApp(index){
   if(!data)return;
   const line=WHATSAPP_LINES[index];
   if(!line || !line.number){alert("Esta línea de WhatsApp todavía no está configurada.");return;}
-  const text=buildOrderText(data)+"\\n\\nQuiero pagar con Cashea. Por favor indíquenme cómo continuar.";
+  const text=buildOrderText(data)+"\n\nQuiero pagar con Cashea. Por favor indíquenme cómo continuar.";
   const baseUrl=/^https?:\/\/wa\.me\//i.test(line.number)?line.number:("https://wa.me/"+line.number.replace(/\D/g,""));
   window.open(baseUrl+(baseUrl.includes("?")?"&":"?")+"text="+encodeWhatsAppText(text),"_blank","noopener");
 }
@@ -2666,25 +2666,35 @@ async function submitPaymentVerification(){
 }
 
 
+function normalizeWhatsAppText(text){
+  return String(text||"")
+    .replace(/\\r?\\n/g,"\n")
+    .replace(/\n{3,}/g,"\n\n")
+    .trim();
+}
+
 function paymentWhatsAppText(){
  const data=getCheckoutData(); if(!data || !ENOC_PAYMENT_ORDER_ID) return "";
- const reference=document.getElementById("paymentReference")?.value.trim()||"";
+ const reference=document.getElementById("paymentReference")?.value.trim()||"N/A";
  const originBank=document.getElementById("originBank")?.value.trim()||"N/A";
  const total=getCartTotalUSD();
  const totalBs=data.payment==="Pago móvil" ? getCartTotalBs() : null;
- return [
- "💳 Hola ENOC, ya realicé el pago de mi pedido.",
- "",
- `🧾 Pedido: ${ENOC_PAYMENT_ORDER_ID}`,
- `👤 Cliente: ${data.name}`,
- `📱 WhatsApp: ${data.phone}`,
- `💳 Método: ${data.payment}`,
- data.payment==="Pago móvil" ? `🏦 Banco de origen: ${originBank}` : null,
- `🔢 Referencia: ${reference}`,
- totalBs!==null ? `💰 Monto pagado: Bs. ${formatBs(totalBs)} ($${total.toFixed(2)})` : `💰 Monto pagado: $${total.toFixed(2)}`,
- "",
- "Adjunto/indico la referencia para que puedan verificar el pago."
- ].filter(Boolean).join("\\n");
+ const emoji={card:"\u{1F4B3}",receipt:"\u{1F9FE}",person:"\u{1F464}",phone:"\u{1F4F1}",bank:"\u{1F3E6}",number:"\u{1F522}",money:"\u{1F4B0}"};
+ const bankLine=data.payment==="Pago móvil" ? `\n${emoji.bank} *Banco de origen:* ${originBank}` : "";
+ const amountLine=totalBs!==null
+   ? `${emoji.money} *Monto pagado:* Bs. ${formatBs(totalBs)} ($${total.toFixed(2)})`
+   : `${emoji.money} *Monto pagado:* $${total.toFixed(2)}`;
+ const text=
+  `${emoji.card} *Hola ENOC, ya realicé el pago de mi pedido.*\n\n`+
+  `${emoji.receipt} *Pedido:* ${ENOC_PAYMENT_ORDER_ID}\n`+
+  `${emoji.person} *Cliente:* ${data.name}\n`+
+  `${emoji.phone} *WhatsApp:* ${data.phone}\n`+
+  `${emoji.card} *Método:* ${data.payment}`+
+  `${bankLine}\n`+
+  `${emoji.number} *Referencia:* ${reference}\n`+
+  `${amountLine}\n\n`+
+  `Por favor, verifiquen el pago y confirmen mi pedido.`;
+ return normalizeWhatsAppText(text);
 }
 
 function resetPaymentWhatsAppChooser(){
@@ -2693,7 +2703,7 @@ function resetPaymentWhatsAppChooser(){
 }
 
 function notifyPaymentWhatsApp(){
- const text=paymentWhatsAppText(); if(!text) return;
+ const text=normalizeWhatsAppText(paymentWhatsAppText()); if(!text) return;
  const configured=WHATSAPP_LINES.filter(line=>line && line.number);
  if(!configured.length){alert("No hay una línea de WhatsApp configurada.");return;}
  if(configured.length===1){ openPaymentWhatsAppLine(0, configured); return; }
@@ -2710,7 +2720,7 @@ function notifyPaymentWhatsApp(){
 function openPaymentWhatsAppLine(index, suppliedLines){
  const lines=suppliedLines || window.__paymentWhatsAppLines || WHATSAPP_LINES;
  const line=lines[index]; if(!line) return;
- const text=paymentWhatsAppText(); if(!text) return;
+ const text=normalizeWhatsAppText(paymentWhatsAppText()); if(!text) return;
  const baseUrl=/^https?:\/\/wa\.me\//i.test(line.number)?line.number:("https://wa.me/"+line.number.replace(/\D/g,""));
  window.open(baseUrl+(baseUrl.includes("?")?"&":"?")+"text="+encodeURIComponent(text),"_blank","noopener");
 }
