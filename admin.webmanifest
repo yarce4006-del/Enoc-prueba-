@@ -1,14 +1,24 @@
 {
   "name": "ENOC — Panel administrativo",
   "short_name": "ENOC Admin",
-  "description": "Panel administrativo de ENOC",
   "start_url": "./admin.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#08134f",
-  "theme_color": "#1238ff",
+  "background_color": "#07158f",
+  "theme_color": "#0019db",
+  "description": "Panel administrativo de ENOC",
   "icons": [
-    {"src":"./enoc-icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+    {
+      "src": "enoc-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "enoc-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
