@@ -14,13 +14,6 @@
 @media(max-width:900px){.stats{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:560px){.stats{grid-template-columns:1fr 1fr}.stats .card:first-child{grid-column:1/-1}}
 </style>
-<link rel="manifest" href="admin.webmanifest">
-<link rel="apple-touch-icon" href="enoc-icon.svg">
-<meta name="theme-color" content="#1238ff">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="ENOC Admin">
 </head>
 <body>
 <div id="enocSoundPrompt" style="position:fixed;right:16px;bottom:16px;z-index:99999;background:#0b1730;color:#fff;padding:12px 14px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;gap:10px;align-items:center;font-size:13px">
@@ -399,16 +392,9 @@ async function enableENOCNotifications(){
     if(enocNotificationsEnabled){
       if(status) status.textContent='Estado: ✅ Notificaciones activadas';
       if(btn){btn.textContent='✅ Notificaciones activadas'; btn.disabled=true; btn.style.opacity='.75';}
-      toast('Permiso concedido. Activando Push en este teléfono...',true);
+      toast('Notificaciones activadas.',true);
       playENOCOrderSound();
-      const pushOk=await registerENOCWebPush();
-      if(pushOk){
-        toast('✅ Push activado. Recibirás pedidos aunque cierres la app.',true);
-        return true;
-      }
-      if(status) status.textContent='Estado: ⚠️ Permiso concedido, pero no se pudo registrar Push en este teléfono.';
-      if(btn){btn.textContent='🔔 Reintentar Push';btn.disabled=false;btn.style.opacity='1';}
-      return false;
+      return true;
     }
     if(permission==='denied'){
       if(status) status.textContent='Estado: ⚠️ Bloqueadas por el navegador. Debes permitirlas en la configuración del sitio.';
@@ -434,11 +420,8 @@ function showENOCNewOrderNotification(order){
   // La alerta se muestra tanto si el Dashboard está visible como si está en segundo plano.
   if(enocNotificationsEnabled && 'Notification' in window){
     try{
-      new Notification('🔔 Nuevo pedido ENOC', {
-        body: body || 'Hay una nueva solicitud de pedido.',
-        tag:'enoc-new-order-'+number,
-        renotify:true
-      });
+      // La notificación del pedido se gestiona exclusivamente mediante Web Push / Service Worker.
+      // Se elimina aquí para evitar duplicados.
     }catch(e){}
   }
   const toastEl=document.getElementById('toast');
@@ -504,7 +487,6 @@ async function checkSession(){
     const status=document.getElementById('enocNotifyStatus');
     const btn=document.getElementById('enocNotifyBtn');
     if(permission==='granted'){ enocNotificationsEnabled=true; if(status) status.textContent='Estado: ✅ Notificaciones ya permitidas'; if(btn){btn.textContent='✅ Notificaciones activadas';btn.disabled=true;btn.style.opacity='.75';} }
-    if(permission==='granted') setTimeout(()=>registerENOCWebPush().catch(()=>{}),500);
     else if(permission==='denied'){ if(status) status.textContent='Estado: ⚠️ Bloqueadas por el navegador. Debes permitirlas en la configuración del sitio.'; if(btn) btn.textContent='⚠️ Notificaciones bloqueadas'; }
   }catch(e){}
   try{ const {data:recent}=await supabaseClient.from("orders").select("id").order("created_at",{ascending:false}).limit(100); (recent||[]).forEach(o=>o?.id&&enocKnownOrderIds.add(o.id)); }catch(e){}
@@ -1504,50 +1486,6 @@ document.addEventListener('DOMContentLoaded',()=>{
  const first=async()=>{if(await unlockENOCSound()){hide();document.removeEventListener('pointerdown',first);}};
  document.addEventListener('pointerdown',first);
 });
-</script>
-<script>
-const ENOC_VAPID_PUBLIC_KEY='BCcIaLSVkPOkLftIBSCHjmJQ_K4ivVJtLO75qTJ_SorniXc-Tm4S1Xd-tQFlwdqMzQA2VrE6NvwC1YDoU5Vr-D4';
-function enocUrlBase64ToUint8Array(base64String){
-  const padding='='.repeat((4-base64String.length%4)%4);
-  const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
-  const raw=atob(base64);
-  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
-}
-async function registerENOCWebPush(){
-  const status=document.getElementById('enocNotifyStatus');
-  try{
-    if(!('serviceWorker' in navigator) || !('PushManager' in window)){
-      if(status) status.textContent='Estado: ⚠️ Este dispositivo/navegador no admite Push.';
-      return false;
-    }
-    if(!window.isSecureContext && location.protocol!=='https:') throw new Error('Las notificaciones Push requieren HTTPS.');
-    const reg=await navigator.serviceWorker.ready;
-    let permission=Notification.permission;
-    if(permission==='default') permission=await Notification.requestPermission();
-    if(permission!=='granted') throw new Error('Permiso de notificaciones no concedido.');
-    let sub=await reg.pushManager.getSubscription();
-    if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:enocUrlBase64ToUint8Array(ENOC_VAPID_PUBLIC_KEY)});
-    const json=sub.toJSON();
-    const {data:{user}}=await supabaseClient.auth.getUser();
-    if(!user) throw new Error('No hay sesión de administrador.');
-    const {error}=await supabaseClient.from('push_subscriptions').upsert({user_id:user.id,endpoint:json.endpoint,p256dh:json.keys?.p256dh,auth:json.keys?.auth,user_agent:navigator.userAgent,updated_at:new Date().toISOString()},{onConflict:'endpoint'});
-    if(error) throw error;
-    enocNotificationsEnabled=true;
-    if(status) status.textContent='Estado: ✅ Push activado en este teléfono';
-    const btn=document.getElementById('enocNotifyBtn');
-    if(btn){btn.textContent='✅ Push activado';btn.disabled=true;btn.style.opacity='.75';}
-    return true;
-  }catch(e){
-    console.error('ENOC Push:',e);
-    if(status) status.textContent='Estado: ⚠️ '+(e?.message||'No se pudo activar Push');
-    return false;
-  }
-}
-if('serviceWorker' in navigator){
-  window.addEventListener('load',async()=>{
-    try{ await navigator.serviceWorker.register('./sw.js'); }catch(e){ console.error('ENOC SW:',e); }
-  });
-}
 </script>
 </body>
 </html>
