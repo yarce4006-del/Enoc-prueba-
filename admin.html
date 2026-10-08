@@ -13,6 +13,30 @@
 /* V3 — limpieza del panel: solo módulos activos y necesarios */
 @media(max-width:900px){.stats{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:560px){.stats{grid-template-columns:1fr 1fr}.stats .card:first-child{grid-column:1/-1}}
+
+
+/* Ventas manuales: selector visual de modelos + carrito */
+.sale-model-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin:14px 0}
+.sale-model-card{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.035);border-radius:16px;padding:9px;cursor:pointer;transition:.18s;overflow:hidden}
+.sale-model-card:hover{transform:translateY(-1px);border-color:rgba(30,136,229,.65)}
+.sale-model-card.selected{border:2px solid #1e88e5;background:rgba(30,136,229,.10);padding:8px}
+.sale-model-card img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:11px;background:#101318}
+.sale-model-card .model-name{font-weight:700;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sale-model-card .model-meta{font-size:12px;opacity:.72;margin-top:3px}
+.sale-cart-wrap{margin-top:16px;border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:14px;background:rgba(0,0,0,.10)}
+.sale-cart-head{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.sale-cart-count{font-size:12px;padding:6px 9px;border-radius:999px;background:rgba(30,136,229,.14);color:#6fb8ff}
+.sale-cart-empty{padding:18px 6px;opacity:.65;text-align:center}
+.sale-cart-item{display:grid;grid-template-columns:54px 1fr auto;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.sale-cart-item:last-child{border-bottom:0}
+.sale-cart-thumb{width:54px;height:54px;border-radius:10px;object-fit:cover;background:#101318}
+.sale-cart-item-title{font-weight:700}
+.sale-cart-item-meta{font-size:12px;opacity:.7;margin-top:3px}
+.sale-cart-item-actions{display:flex;align-items:center;gap:6px}
+.sale-cart-item-actions button{border:0;border-radius:9px;padding:7px 9px;background:rgba(255,255,255,.08);color:inherit;cursor:pointer}
+.sale-cart-item-actions .remove{background:rgba(255,70,70,.12)}
+.sale-cart-total{text-align:right;font-size:18px;font-weight:800;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.10)}
+@media(max-width:650px){.sale-model-picker{grid-template-columns:repeat(2,minmax(0,1fr))}.sale-cart-item{grid-template-columns:46px 1fr}.sale-cart-item-actions{grid-column:2;justify-content:flex-start}.sale-cart-thumb{width:46px;height:46px}}
 </style>
 </head>
 <body>
@@ -109,22 +133,86 @@
       </section>
 
       <section id="ventas" class="section">
-  <div class="hero"><h1>Nueva venta</h1><p>Registra aquí las compras que concretaste por WhatsApp, tienda o cualquier otro canal. La solicitud de WhatsApp no descuenta stock; la venta manual sí.</p></div>
+  
+<div class="card glass" id="dailySalesControl" style="margin-bottom:16px">
+  <div class="cardhead">
+    <div>
+      <h2>📦 Control diario de ventas</h2>
+      <div class="sub">Consulta por fecha lo registrado en ENOC para compararlo con Nectar.</div>
+    </div>
+    <button class="admin-btn" type="button" onclick="setDailySalesToday()">Hoy</button>
+  </div>
+
+  <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:14px">
+    <div class="field" style="min-width:180px;flex:1">
+      <label>Fecha</label>
+      <input id="dailySalesDate" type="date" onchange="loadDailySalesControl()">
+    </div>
+  </div>
+
+  <div class="stats" style="margin:0">
+    <div class="card glass">
+      <div class="stat-label">Ventas en tienda</div>
+      <div id="dailyStoreOrders" class="stat-value">0</div>
+      <div class="delta">Pedidos registrados en caja</div>
+    </div>
+    <div class="card glass">
+      <div class="stat-label">Ventas por internet</div>
+      <div id="dailyOnlineOrders" class="stat-value">0</div>
+      <div class="delta">Pedidos de la página</div>
+    </div>
+    <div class="card glass">
+      <div class="stat-label">Solicitudes WhatsApp</div>
+      <div id="dailyWhatsappOrders" class="stat-value">0</div>
+      <div class="delta">Pedidos originados por WhatsApp</div>
+    </div>
+    <div class="card glass">
+      <div class="stat-label">Total del día</div>
+      <div id="dailyTotal" class="stat-value">$0.00</div>
+      <div id="dailyUnits" class="delta">0 unidades</div>
+    </div>
+  </div>
+
+  <div id="dailySalesBreakdown" class="note" style="margin-top:14px">
+    Selecciona una fecha para consultar el resumen.
+  </div>
+</div>
+
+<div class="hero"><h1>Nueva venta</h1><p>Arma una venta completa como un carrito: agrega varias prendas, revisa el pedido y registra todo de una sola vez. Cada producto descuenta su stock correspondiente.</p></div>
   <div class="card glass">
-    <div class="cardhead"><div><h2>Registrar venta</h2><div class="sub">Selecciona producto → modelo → talla/color → cantidad</div></div></div>
+    <div class="cardhead"><div><h2>Registrar venta</h2><div class="sub">Agrega productos → selecciona modelo con imagen → talla/color → cantidad → añade al pedido</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="primary" type="button" onclick="enableStoreSaleMode()">🏪 Venta en tienda</button></div></div></div>
     <div class="formgrid">
       <div class="field full"><label>Solicitud de WhatsApp (opcional)</label><select id="saleRequest"><option value="">Venta nueva / sin solicitud</option></select></div>
       <div class="field"><label>Cliente</label><input id="saleCustomerName" placeholder="Nombre del cliente"></div>
-      <div class="field"><label>WhatsApp</label><input id="saleCustomerPhone" placeholder="0414... / +58..." ></div>
-      <div class="field"><label>Producto</label><select id="saleProduct" onchange="loadSaleModels()"></select></div>
-      <div class="field"><label>Modelo</label><select id="saleModel" onchange="loadSaleVariants()"></select></div>
+      <div class="field"><label>WhatsApp</label><input id="saleCustomerPhone" placeholder="0414... / +58..."></div>
+      <div class="field full"><label>Producto</label><select id="saleProduct" onchange="loadSaleModels()"></select></div>
+    </div>
+
+    <div id="saleModelPicker" class="sale-model-picker"></div>
+    <select id="saleModel" style="display:none"></select>
+
+    <div class="formgrid">
       <div class="field"><label>Talla / Color</label><select id="saleVariant"></select></div>
       <div class="field"><label>Cantidad</label><input id="saleQty" type="number" min="1" step="1" value="1"></div>
+      <div class="field full"><button type="button" class="primary" onclick="addManualSaleItem()">＋ Agregar al pedido</button></div>
+    </div>
+
+    <div id="saleSummary" class="note" style="margin-top:14px">Selecciona un producto y un modelo.</div>
+
+    <div class="sale-cart-wrap">
+      <div class="sale-cart-head">
+        <div><strong>🛒 Pedido de esta venta</strong><div class="sub">Puedes agregar tantas prendas como necesites.</div></div>
+        <div id="saleCartCount" class="sale-cart-count">0 artículos</div>
+      </div>
+      <div id="manualSaleCart" class="sale-cart-empty">Todavía no has agregado productos.</div>
+      <div id="manualSaleCartTotal" class="sale-cart-total">Total: $0.00</div>
+    </div>
+
+    <div class="formgrid" style="margin-top:14px">
       <div class="field"><label>Método de pago</label><select id="salePayment"><option>Pago Móvil</option><option>Binance Pay</option><option>Efectivo</option><option>Transferencia</option><option>Cashea</option><option>Otro</option></select></div>
       <div class="field"><label>Referencia de pago</label><input id="saleReference" placeholder="Referencia / comprobante"></div>
     </div>
-    <div id="saleSummary" class="note" style="margin-top:14px">Selecciona una variante.</div>
-    <div class="admin-actions-row"><button class="primary" onclick="createManualSale()">✓ Registrar venta y descontar stock</button></div>
+    <div class="admin-actions-row"><button class="primary" onclick="createManualSale()">✓ Registrar venta completa y descontar stock</button></div>
   </div>
 </section>
 
@@ -494,6 +582,8 @@ async function checkSession(){
   startENOCOrderPolling();
   return true;
 }
+setTimeout(initDailySalesControl, 0);
+
 function logout(){
   sessionStorage.removeItem("enoc_admin_session");
   supabaseClient.auth.signOut().finally(()=>location.href="login.html");
@@ -1088,6 +1178,7 @@ async function toggleVariant(){
 let manualSaleProducts=[];
 let manualSaleModels=[];
 let manualSaleVariants=[];
+let manualSaleCart=[];
 
 async function loadManualSale(){
   if(!products.length) await loadProducts();
@@ -1095,8 +1186,10 @@ async function loadManualSale(){
   const ps=document.getElementById("saleProduct");
   if(ps) ps.innerHTML='<option value="">Selecciona un producto</option>'+manualSaleProducts.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("");
   await loadManualSaleRequests();
-  loadSaleModels();
+  await loadSaleModels();
+  renderManualSaleCart();
 }
+
 async function loadManualSaleRequests(){
   const sel=document.getElementById("saleRequest"); if(!sel)return;
   const {data,error}=await supabaseClient.from("orders").select("id,order_number,customer_name,customer_phone,status,items,total,created_at").in("status",["Espera de verificación","Pendiente"]).order("created_at",{ascending:false});
@@ -1104,51 +1197,321 @@ async function loadManualSaleRequests(){
   sel.innerHTML='<option value="">Venta nueva / sin solicitud</option>'+(data||[]).map(o=>`<option value="${o.id}">${esc(o.order_number||o.id)} · ${esc(o.customer_name||"Cliente")} · ${money(o.total)}</option>`).join("");
   sel.onchange=()=>fillSaleFromRequest(sel.value,data||[]);
 }
+
 function parseOrderItems(v){if(Array.isArray(v))return v;if(typeof v==='string'){try{return JSON.parse(v)||[]}catch(e){return []}}return []}
+
 function fillSaleFromRequest(id,rows){
   const o=(rows||[]).find(x=>String(x.id)===String(id)); if(!o)return;
   document.getElementById("saleCustomerName").value=o.customer_name||"";
   document.getElementById("saleCustomerPhone").value=o.customer_phone||"";
-  const items=parseOrderItems(o.items); const first=items[0];
-  if(!first)return;
-  const p=manualSaleProducts.find(x=>x.id===first.product_id)||manualSaleProducts.find(x=>x.name===first.name);
-  if(p){document.getElementById("saleProduct").value=p.id; loadSaleModels().then(()=>{const ms=manualSaleModels;const m=ms.find(x=>x.id===first.model_id)||ms.find(x=>x.name===first.model);if(m){document.getElementById("saleModel").value=m.id;loadSaleVariants().then(()=>{const vs=manualSaleVariants;const v=vs.find(x=>String(x.size)===String(first.size)&&String(x.color||"")==String(first.color||""));if(v)document.getElementById("saleVariant").value=v.id;document.getElementById("saleQty").value=Number(first.qty)||1;updateSaleSummary();});}});}
+  const items=parseOrderItems(o.items);
+  if(!items.length)return;
+  // Carga todos los artículos de la solicitud en el carrito cuando sus variantes existen.
+  manualSaleCart=[];
+  (async()=>{
+    for(const first of items){
+      const p=manualSaleProducts.find(x=>x.id===first.product_id)||manualSaleProducts.find(x=>x.name===first.name);
+      if(!p) continue;
+      const {data:mods}=await supabaseClient.from("product_models").select("id,product_id,name,image_urls,active").eq("product_id",p.id).eq("active",true);
+      const m=(mods||[]).find(x=>x.id===first.model_id)|| (mods||[]).find(x=>x.name===first.model);
+      if(!m) continue;
+      const {data:vs}=await supabaseClient.from("product_model_variants").select("id,model_id,size,color,stock,price,active").eq("model_id",m.id).eq("active",true);
+      const v=(vs||[]).find(x=>String(x.size)===String(first.size)&&String(x.color||"")===String(first.color||""));
+      if(!v) continue;
+      addItemToCart(p,m,v,Number(first.qty)||1,false);
+    }
+    renderManualSaleCart();
+    updateSaleSummary();
+  })();
 }
+
+function modelImage(m,p){
+  const urls=Array.isArray(m?.image_urls)&&m.image_urls.length?m.image_urls:(p?.image_urls?.length?p.image_urls:(p?.image_url?[p.image_url]:[]));
+  return urls[0]||"";
+}
+
 async function loadSaleModels(){
-  const ps=document.getElementById("saleProduct"), ms=document.getElementById("saleModel"); if(!ps||!ms)return;
-  const pid=ps.value; ms.innerHTML='<option value="">Selecciona modelo</option>'; manualSaleModels=[]; manualSaleVariants=[];
-  if(!pid){document.getElementById("saleVariant").innerHTML='<option value="">Selecciona talla/color</option>';updateSaleSummary();return;}
+  const ps=document.getElementById("saleProduct"), ms=document.getElementById("saleModel"), picker=document.getElementById("saleModelPicker");
+  if(!ps||!ms)return;
+  const pid=ps.value;
+  ms.innerHTML='<option value="">Selecciona modelo</option>';
+  manualSaleModels=[]; manualSaleVariants=[];
+  if(picker) picker.innerHTML=pid?'<div class="note">Cargando modelos…</div>':"";
+  if(!pid){
+    document.getElementById("saleVariant").innerHTML='<option value="">Selecciona talla/color</option>';
+    updateSaleSummary(); return;
+  }
   const {data,error}=await supabaseClient.from("product_models").select("id,product_id,name,image_urls,active").eq("product_id",pid).eq("active",true).order("created_at",{ascending:true});
   if(error){toast("No se pudieron cargar los modelos: "+error.message,false);return;}
-  manualSaleModels=data||[]; ms.innerHTML='<option value="">Selecciona modelo</option>'+manualSaleModels.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join("");
+  manualSaleModels=data||[];
+  ms.innerHTML='<option value="">Selecciona modelo</option>'+manualSaleModels.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join("");
+  if(picker){
+    const p=manualSaleProducts.find(x=>x.id===pid);
+    picker.innerHTML=manualSaleModels.length?manualSaleModels.map(m=>{
+      const img=modelImage(m,p);
+      return `<button type="button" class="sale-model-card" data-model-id="${m.id}" onclick="selectManualSaleModel('${m.id}')">
+        ${img?`<img src="${esc(img)}" alt="${esc(m.name)}">`:`<div class="sale-model-card img-fallback"></div>`}
+        <div class="model-name">${esc(m.name)}</div>
+        <div class="model-meta">Toca para seleccionar</div>
+      </button>`;
+    }).join(""):'<div class="note">Este producto no tiene modelos activos.</div>';
+  }
   await loadSaleVariants();
 }
+
+async function selectManualSaleModel(modelId){
+  const ms=document.getElementById("saleModel");
+  if(!ms)return;
+  ms.value=modelId;
+  document.querySelectorAll(".sale-model-card").forEach(el=>el.classList.toggle("selected",el.dataset.modelId===String(modelId)));
+  await loadSaleVariants();
+}
+
 async function loadSaleVariants(){
   const ms=document.getElementById("saleModel"), vs=document.getElementById("saleVariant"); if(!ms||!vs)return;
-  const mid=ms.value; manualSaleVariants=[]; vs.innerHTML='<option value="">Selecciona talla/color</option>'; if(!mid){updateSaleSummary();return;}
+  const mid=ms.value; manualSaleVariants=[]; vs.innerHTML='<option value="">Selecciona talla/color</option>';
+  if(!mid){updateSaleSummary();return;}
   const {data,error}=await supabaseClient.from("product_model_variants").select("id,model_id,size,color,stock,price,active").eq("model_id",mid).eq("active",true).order("size",{ascending:true});
   if(error){toast("No se pudo cargar el stock: "+error.message,false);return;}
-  manualSaleVariants=(data||[]).filter(v=>Number(v.stock||0)>0); vs.innerHTML+='<option disabled>— Stock disponible —</option>'+manualSaleVariants.map(v=>`<option value="${v.id}">Talla ${esc(v.size)} · ${esc(v.color||"Único")} · ${Number(v.stock||0)} disponibles</option>`).join("");
-  vs.onchange=updateSaleSummary; document.getElementById("saleQty").oninput=updateSaleSummary; updateSaleSummary();
+  manualSaleVariants=(data||[]).filter(v=>Number(v.stock||0)>0);
+  vs.innerHTML+='<option disabled>— Stock disponible —</option>'+manualSaleVariants.map(v=>`<option value="${v.id}">Talla ${esc(v.size)} · ${esc(v.color||"Único")} · ${Number(v.stock||0)} disponibles</option>`).join("");
+  vs.onchange=updateSaleSummary;
+  document.getElementById("saleQty").oninput=updateSaleSummary;
+  document.querySelectorAll(".sale-model-card").forEach(el=>el.classList.toggle("selected",el.dataset.modelId===String(mid)));
+  updateSaleSummary();
 }
+
+function addItemToCart(p,m,v,q,showToast=true){
+  q=Math.max(1,Number(q)||1);
+  if(q>Number(v.stock||0)){if(showToast)toast("La cantidad supera el stock disponible.",false);return false;}
+  const existing=manualSaleCart.find(x=>x.variant_id===v.id);
+  if(existing){
+    if(existing.qty+q>Number(v.stock||0)){if(showToast)toast("No hay suficiente stock para aumentar esta cantidad.",false);return false;}
+    existing.qty+=q;
+  }else{
+    manualSaleCart.push({
+      variant_id:v.id,product_id:p.id,product_name:p.name,model_id:m.id,model_name:m.name,
+      size:v.size,color:v.color||"",qty:q,price:Number(v.price!=null?v.price:p.price)||0,
+      image:modelImage(m,p),stock:Number(v.stock||0)
+    });
+  }
+  return true;
+}
+
+function addManualSaleItem(){
+  const p=manualSaleProducts.find(x=>x.id===document.getElementById("saleProduct")?.value);
+  const m=manualSaleModels.find(x=>x.id===document.getElementById("saleModel")?.value);
+  const v=manualSaleVariants.find(x=>x.id===document.getElementById("saleVariant")?.value);
+  const q=Math.max(1,Number(document.getElementById("saleQty")?.value)||1);
+  if(!p||!m||!v){toast("Selecciona producto, modelo y talla/color.",false);return;}
+  if(addItemToCart(p,m,v,q,true)){
+    renderManualSaleCart();
+    toast("Producto agregado al pedido.");
+    document.getElementById("saleQty").value="1";
+  }
+}
+
+function renderManualSaleCart(){
+  const box=document.getElementById("manualSaleCart"), totalBox=document.getElementById("manualSaleCartTotal"), count=document.getElementById("saleCartCount");
+  const total=manualSaleCart.reduce((sum,x)=>sum+x.price*x.qty,0);
+  const units=manualSaleCart.reduce((sum,x)=>sum+x.qty,0);
+  if(count)count.textContent=`${units} ${units===1?"artículo":"artículos"}`;
+  if(totalBox)totalBox.textContent=`Total: ${money(total)}`;
+  if(!box)return;
+  if(!manualSaleCart.length){box.className="sale-cart-empty";box.textContent="Todavía no has agregado productos.";return;}
+  box.className="";
+  box.innerHTML=manualSaleCart.map((x,i)=>`
+    <div class="sale-cart-item">
+      ${x.image?`<img class="sale-cart-thumb" src="${esc(x.image)}" alt="${esc(x.model_name)}">`:`<div class="sale-cart-thumb"></div>`}
+      <div>
+        <div class="sale-cart-item-title">${esc(x.product_name)} · ${esc(x.model_name)}</div>
+        <div class="sale-cart-item-meta">Talla ${esc(x.size)} · ${esc(x.color||"Único")} · ${money(x.price)} c/u · ${Number(x.stock)} disponibles</div>
+      </div>
+      <div class="sale-cart-item-actions">
+        <button type="button" onclick="changeManualSaleQty(${i},-1)">−</button>
+        <b>${x.qty}</b>
+        <button type="button" onclick="changeManualSaleQty(${i},1)">+</button>
+        <button type="button" class="remove" onclick="removeManualSaleItem(${i})">✕</button>
+      </div>
+    </div>`).join("");
+}
+
+function changeManualSaleQty(i,delta){
+  const x=manualSaleCart[i]; if(!x)return;
+  const next=x.qty+delta;
+  if(next<1){removeManualSaleItem(i);return;}
+  if(next>x.stock){toast("No hay más stock disponible para esta variante.",false);return;}
+  x.qty=next; renderManualSaleCart();
+}
+
+function removeManualSaleItem(i){manualSaleCart.splice(i,1);renderManualSaleCart();}
+
 function updateSaleSummary(){
- const p=manualSaleProducts.find(x=>x.id===document.getElementById("saleProduct")?.value); const v=manualSaleVariants.find(x=>x.id===document.getElementById("saleVariant")?.value); const q=Math.max(1,Number(document.getElementById("saleQty")?.value)||1); const box=document.getElementById("saleSummary");
- if(!box)return; if(!p||!v){box.textContent="Selecciona una variante.";return;} const price=Number(v.price!=null?v.price:p.price)||0; box.innerHTML=`<b>${esc(p.name)}</b> · ${esc((manualSaleModels.find(m=>m.id===v.model_id)||{}).name||"")} · Talla ${esc(v.size)} · ${esc(v.color||"Único")} · Stock actual: ${Number(v.stock||0)} · Total: ${money(price*q)}`;
+  const p=manualSaleProducts.find(x=>x.id===document.getElementById("saleProduct")?.value);
+  const m=manualSaleModels.find(x=>x.id===document.getElementById("saleModel")?.value);
+  const v=manualSaleVariants.find(x=>x.id===document.getElementById("saleVariant")?.value);
+  const q=Math.max(1,Number(document.getElementById("saleQty")?.value)||1);
+  const box=document.getElementById("saleSummary"); if(!box)return;
+  if(!p||!m||!v){box.textContent="Selecciona producto, modelo y talla/color.";return;}
+  const price=Number(v.price!=null?v.price:p.price)||0;
+  box.innerHTML=`<b>${esc(p.name)}</b> · <b>${esc(m.name)}</b> · Talla ${esc(v.size)} · ${esc(v.color||"Único")} · Stock: ${Number(v.stock||0)} · Subtotal: ${money(price*q)}`;
 }
+
 async function createManualSale(){
- const p=manualSaleProducts.find(x=>x.id===document.getElementById("saleProduct").value); const v=manualSaleVariants.find(x=>x.id===document.getElementById("saleVariant").value); const q=Math.max(1,Number(document.getElementById("saleQty").value)||1); const reqId=document.getElementById("saleRequest").value;
- if(!p||!v){toast("Selecciona producto, modelo y talla/color.",false);return;} if(q>Number(v.stock||0)){toast("La cantidad supera el stock disponible.",false);return;}
- const price=Number(v.price!=null?v.price:p.price)||0; const model=manualSaleModels.find(m=>m.id===v.model_id); const orderNumber="V"+Date.now().toString().slice(-8); const customerName=document.getElementById("saleCustomerName").value.trim()||"Venta manual"; const customerPhone=document.getElementById("saleCustomerPhone").value.trim();
- const item={product_id:p.id,name:p.name,model:model?.name||"",model_id:model?.id||null,size:v.size,color:v.color||"",qty:q,price};
- if(!confirm(`Registrar venta de ${q} unidad(es) y descontar stock?`))return;
- const {data:inserted,error:insErr}=await supabaseClient.from("orders").insert({order_number:orderNumber,customer_name:customerName,customer_phone:customerPhone||null,delivery_method:"Retiro en tienda",payment_method:document.getElementById("salePayment").value,payment_reference:document.getElementById("saleReference").value.trim()||null,total:price*q,total_bs:null,bcv_rate:null,items:[item],customer_data:{origin:"manual",source_request_id:reqId||null},status:"Confirmado"}).select("id").single();
- if(insErr){toast("No se pudo registrar la venta: "+insErr.message,false);return;}
- const {error:upErr}=await supabaseClient.from("product_model_variants").update({stock:Number(v.stock)-q,updated_at:new Date().toISOString()}).eq("id",v.id).eq("stock",v.stock);
- if(upErr){toast("Venta creada, pero no se pudo descontar stock: "+upErr.message,false);return;}
- if(reqId){await supabaseClient.from("orders").update({status:"Confirmado",updated_at:new Date().toISOString()}).eq("id",reqId);}
- toast("Venta registrada y stock actualizado.");
- document.getElementById("saleCustomerName").value="";document.getElementById("saleCustomerPhone").value="";document.getElementById("saleReference").value="";document.getElementById("saleQty").value="1";document.getElementById("saleRequest").value="";
- await loadOrders(); await loadDashboard(); await loadManualSale();
+  if(!manualSaleCart.length){toast("Agrega al menos un producto al pedido.",false);return;}
+  const customerName=document.getElementById("saleCustomerName").value.trim()||"Venta manual";
+  const customerPhone=document.getElementById("saleCustomerPhone").value.trim();
+  const reqId=document.getElementById("saleRequest").value;
+  const total=manualSaleCart.reduce((sum,x)=>sum+x.price*x.qty,0);
+  if(!confirm(`Registrar ${manualSaleCart.reduce((sum,x)=>sum+x.qty,0)} unidad(es) por ${money(total)} y descontar stock?`))return;
+
+  // Revalidamos el stock real antes de guardar para evitar vender más unidades de las disponibles.
+  const ids=manualSaleCart.map(x=>x.variant_id);
+  const {data:currentVariants,error:stockReadErr}=await supabaseClient.from("product_model_variants").select("id,stock").in("id",ids);
+  if(stockReadErr){toast("No se pudo verificar el stock: "+stockReadErr.message,false);return;}
+  const stockMap=new Map((currentVariants||[]).map(v=>[v.id,Number(v.stock||0)]));
+  for(const item of manualSaleCart){
+    const available=stockMap.get(item.variant_id);
+    if(available==null || item.qty>available){toast(`Stock insuficiente para ${item.product_name} · ${item.model_name} · talla ${item.size}. Disponible: ${available??0}.`,false);return;}
+  }
+
+  const orderNumber="V"+Date.now().toString().slice(-8);
+  const items=manualSaleCart.map(x=>({product_id:x.product_id,name:x.product_name,model:x.model_name,model_id:x.model_id,size:x.size,color:x.color,qty:x.qty,price:x.price}));
+  const {data:inserted,error:insErr}=await supabaseClient.from("orders").insert({
+    order_number:orderNumber,customer_name:customerName,customer_phone:customerPhone || "N/A",
+    delivery_method:"Retiro en tienda",payment_method:document.getElementById("salePayment").value,
+    payment_reference:document.getElementById("saleReference").value.trim()||null,
+    total,total_bs:null,bcv_rate:null,items,
+    customer_data:{origin:"manual",sale_channel:"store",source_request_id:reqId||null},status:"Confirmado"
+  }).select("id").single();
+  if(insErr){toast("No se pudo registrar la venta: "+insErr.message,false);return;}
+
+  let stockError=null;
+  for(const item of manualSaleCart){
+    const current=stockMap.get(item.variant_id);
+    const {error}=await supabaseClient.from("product_model_variants")
+      .update({stock:current-item.qty,updated_at:new Date().toISOString()})
+      .eq("id",item.variant_id).eq("stock",current);
+    if(error){stockError=error;break;}
+  }
+  if(stockError){
+    toast("La venta fue creada, pero hubo un problema al descontar un stock: "+stockError.message,false);
+  }else{
+    if(reqId)await supabaseClient.from("orders").update({status:"Confirmado",updated_at:new Date().toISOString()}).eq("id",reqId);
+    toast("Venta completa registrada y stock actualizado.");
+  }
+
+  manualSaleCart=[];
+  document.getElementById("saleCustomerName").value="";
+  document.getElementById("saleCustomerPhone").value="";
+  document.getElementById("saleReference").value="";
+  document.getElementById("saleQty").value="1";
+  document.getElementById("saleRequest").value="";
+  renderManualSaleCart();
+  await loadOrders(); await loadDashboard(); await loadManualSale();
+}
+
+
+let dailySalesRows = [];
+
+function localDateKey(dateLike){
+  const d = dateLike ? new Date(dateLike) : new Date();
+  if(Number.isNaN(d.getTime())) return "";
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,"0");
+  const day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+
+function setDailySalesToday(){
+  const el=document.getElementById("dailySalesDate");
+  if(el) el.value=localDateKey();
+  loadDailySalesControl();
+}
+
+function classifyOrderChannel(o){
+  const origin=o?.customer_data?.origin || o?.customer_data?.source || "";
+  if(origin==="manual" && o?.customer_data?.sale_channel==="store") return "store";
+  if(origin==="manual") return "store";
+  if(origin==="whatsapp" || origin==="whatsapp_request" || o?.customer_data?.channel==="whatsapp" || o?.customer_data?.source==="whatsapp") return "whatsapp";
+  return "online";
+}
+
+function orderUnits(o){
+  let items=parseOrderItems(o?.items);
+  return items.reduce((sum,it)=>sum+(Number(it?.qty)||0),0);
+}
+
+async function loadDailySalesControl(){
+  const dateEl=document.getElementById("dailySalesDate");
+  if(!dateEl) return;
+  const selected=dateEl.value || localDateKey();
+  const start=new Date(selected+"T00:00:00");
+  const end=new Date(selected+"T23:59:59.999");
+  if(Number.isNaN(start.getTime())) return;
+
+  const {data,error}=await supabaseClient
+    .from("orders")
+    .select("id,order_number,customer_name,total,items,customer_data,status,created_at")
+    .gte("created_at",start.toISOString())
+    .lte("created_at",end.toISOString())
+    .order("created_at",{ascending:true});
+
+  if(error){
+    const box=document.getElementById("dailySalesBreakdown");
+    if(box) box.textContent="No se pudo cargar el control diario: "+error.message;
+    return;
+  }
+
+  dailySalesRows=data||[];
+  let store=0, online=0, whatsapp=0;
+  let storeTotal=0, onlineTotal=0, whatsappTotal=0, units=0;
+
+  for(const o of dailySalesRows){
+    const channel=classifyOrderChannel(o);
+    const total=Number(o.total)||0;
+    const u=orderUnits(o);
+    units+=u;
+    if(channel==="store"){store++;storeTotal+=total;}
+    else if(channel==="whatsapp"){whatsapp++;whatsappTotal+=total;}
+    else {online++;onlineTotal+=total;}
+  }
+
+  const set=(id,val)=>{const e=document.getElementById(id);if(e)e.textContent=val;};
+  set("dailyStoreOrders",store);
+  set("dailyOnlineOrders",online);
+  set("dailyWhatsappOrders",whatsapp);
+  set("dailyTotal",money(storeTotal+onlineTotal+whatsappTotal));
+  set("dailyUnits",`${units} ${units===1?"unidad":"unidades"}`);
+
+  const box=document.getElementById("dailySalesBreakdown");
+  if(box){
+    box.innerHTML =
+      `<b>${selected}</b> · ${dailySalesRows.length} pedido(s) registrado(s)`+
+      ` · <b>Ventas en tienda:</b> ${money(storeTotal)}`+
+      ` · <b>Internet:</b> ${money(onlineTotal)}`+
+      ` · <b>WhatsApp:</b> ${money(whatsappTotal)}`;
+  }
+}
+
+function enableStoreSaleMode(){
+  const name=document.getElementById("saleCustomerName");
+  const phone=document.getElementById("saleCustomerPhone");
+  if(name) name.value="";
+  if(phone) phone.value="";
+  if(name) name.disabled=true;
+  if(phone) phone.disabled=true;
+  const req=document.getElementById("saleRequest");
+  if(req) req.value="";
+  const summary=document.getElementById("saleSummary");
+  if(summary) summary.textContent="🏪 Venta en tienda: selecciona los productos para armar el pedido.";
+  toast("Modo Venta en tienda activado. No necesitas nombre ni WhatsApp.",true);
+}
+
+function initDailySalesControl(){
+  const el=document.getElementById("dailySalesDate");
+  if(el && !el.value) el.value=localDateKey();
+  loadDailySalesControl();
 }
 
 async function loadOrders(){
