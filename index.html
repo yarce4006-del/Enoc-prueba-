@@ -1462,6 +1462,29 @@ html,body{width:100%;max-width:100%;overflow-x:hidden!important}
 }
 </style>
 
+
+<style id="enoc-v76-nav-clean">
+/* V76 — la barra inferior queda totalmente opaca para que ningún borde del contenido se vea detrás. */
+@media (max-width: 768px){
+  .mobile-bottom-nav{
+    background:#fff!important;
+    border:0!important;
+    border-top:0!important;
+    box-shadow:0 12px 34px rgba(15,23,42,.18)!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    isolation:isolate!important;
+    overflow:hidden!important;
+  }
+  .mobile-bottom-nav::before,
+  .mobile-bottom-nav::after{
+    content:none!important;
+    display:none!important;
+    border:0!important;
+    box-shadow:none!important;
+  }
+}
+</style>
 </head>
 <body>
 <div class="top"><span>🚚 Envíos a todo Venezuela</span></div>
@@ -2659,6 +2682,19 @@ function openPaymentWhatsAppLine(index, suppliedLines){
   .primary.full{margin-bottom:24px;}
   .mobile-bottom-nav{z-index:2147483647!important; padding-bottom:env(safe-area-inset-bottom); pointer-events:auto!important; position:fixed!important;}
   .mobile-bottom-nav button{pointer-events:auto!important; touch-action:manipulation!important; position:relative; z-index:2147483648;}
+}
+</style>
+
+
+<style id="enoc-fix-v76-bottom-nav-shadow">
+@media (max-width:700px){
+  .mobile-bottom-nav{
+    background:#fff!important;
+    border:1px solid #e4e7ec!important;
+    box-shadow:0 8px 24px rgba(9,20,80,.12)!important;
+    filter:none!important;
+    outline:none!important;
+  }
 }
 </style>
 
