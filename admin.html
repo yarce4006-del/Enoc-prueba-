@@ -67,6 +67,7 @@
       <nav class="nav">
         <button class="active" data-section="dashboard"><i class="dot"></i>Dashboard</button>
         <button data-section="productos"><i class="dot"></i>Productos</button>
+        <button data-section="imagenes"><i class="dot"></i>Gestión de imágenes</button>
         <button data-section="categorias"><i class="dot"></i>Categorías</button>
         <button data-section="pedidos"><i class="dot"></i>Pedidos</button>
         <button data-section="ventas"><i class="dot"></i>Ventas manuales</button>
@@ -115,6 +116,23 @@
             <thead><tr><th>SKU</th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody id="productsTable"><tr><td colspan="6">Cargando…</td></tr></tbody>
           </table></div>
+        </div>
+      </section>
+
+
+      <section id="imagenes" class="section">
+        <div class="hero"><h1>Gestión de imágenes</h1><p>Sustituye fotos de productos y modelos sin modificar precios, tallas, stock ni pedidos.</p></div>
+        <div class="card glass" style="margin-bottom:16px">
+          <div class="cardhead"><div><h2>Antes de sustituir</h2><div class="sub">Se sube una imagen nueva y se actualiza su referencia. La imagen anterior no se borra.</div></div><button class="admin-btn" type="button" onclick="loadManagedImages()">Actualizar lista</button></div>
+          <p class="note" style="margin-top:12px">Recomendado: WebP optimizado. La imagen nueva debe corresponder al mismo producto o modelo. Si ocurre un error, la imagen original se conserva en el almacenamiento.</p>
+        </div>
+        <div class="card glass" style="margin-bottom:16px">
+          <div class="cardhead"><div><h2>Imágenes de productos</h2><div class="sub">Fotos principales y fotos adicionales de cada producto.</div></div></div>
+          <div id="managedProductImages" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-top:16px"><div class="note">Pulsa “Actualizar lista” para cargar imágenes.</div></div>
+        </div>
+        <div class="card glass">
+          <div class="cardhead"><div><h2>Imágenes de modelos</h2><div class="sub">Fotos asociadas a cada modelo del inventario.</div></div></div>
+          <div id="managedModelImages" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-top:16px"><div class="note">Pulsa “Actualizar lista” para cargar imágenes.</div></div>
         </div>
       </section>
 
@@ -598,6 +616,7 @@ document.querySelectorAll(".nav button").forEach(btn=>{
     window.scrollTo({top:0,behavior:"smooth"});
     if(btn.dataset.section==="dashboard") loadDashboard();
     if(btn.dataset.section==="productos") loadProducts();
+    if(btn.dataset.section==="imagenes") loadManagedImages();
     if(btn.dataset.section==="categorias") loadCategories();
     if(btn.dataset.section==="pedidos") loadOrders();
     if(btn.dataset.section==="ventas") loadManualSale();
@@ -605,6 +624,142 @@ document.querySelectorAll(".nav button").forEach(btn=>{
     if(btn.dataset.section==="inventario") loadInventory();
   });
 });
+
+
+// Gestión segura de imágenes: conserva archivos originales y solo actualiza
+// la referencia en products/product_models después de subir el reemplazo.
+let managedImageBusy = false;
+
+function managedImageCard(url, title, detail, inputHtml) {
+  const safeUrl = esc(url || "");
+  return `<div class="card" style="padding:10px;overflow:hidden;border:1px solid #e1e7f0">
+    <div style="aspect-ratio:1;background:#f3f6fa;border-radius:10px;overflow:hidden;display:grid;place-items:center">
+      ${safeUrl ? `<img src="${safeUrl}" alt="${esc(title)}" loading="lazy" style="width:100%;height:100%;object-fit:contain" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<span style=&quot;color:#b42318;padding:12px&quot;>No se pudo cargar la imagen</span>')">` : `<span style="color:#718096;padding:12px;text-align:center">Sin imagen</span>`}
+    </div>
+    <b style="display:block;margin-top:9px;line-height:1.35">${esc(title)}</b>
+    <small style="display:block;color:#667794;margin-top:4px;overflow-wrap:anywhere">${esc(detail)}</small>
+    <div style="margin-top:10px">${inputHtml}</div>
+  </div>`;
+}
+
+async function loadManagedImages(){
+  const productBox=document.getElementById("managedProductImages");
+  const modelBox=document.getElementById("managedModelImages");
+  if(!productBox||!modelBox)return;
+  productBox.innerHTML='<div class="note">Cargando productos…</div>';
+  modelBox.innerHTML='<div class="note">Cargando modelos…</div>';
+  try{
+    const {data:ps,error:pe}=await supabaseClient
+      .from("products")
+      .select("id,sku,name,image_url,image_urls,image_labels")
+      .order("name",{ascending:true});
+    if(pe)throw new Error("Productos: "+pe.message);
+    const plist=ps||[];
+    products=plist;
+    if(!plist.length) productBox.innerHTML='<div class="note">No hay productos.</div>';
+    else productBox.innerHTML=plist.map(p=>{
+      const urls=Array.isArray(p.image_urls)&&p.image_urls.length?p.image_urls:(p.image_url?[p.image_url]:[]);
+      const labels=Array.isArray(p.image_labels)?p.image_labels:[];
+      if(!urls.length) return managedImageCard("",p.name||"Producto","Sin imagen cargada",`<label class="admin-btn" style="display:block;text-align:center">Añadir imagen<input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="replaceManagedImage('product','${esc(p.id)}',0,this)"></label>`);
+      return urls.map((url,i)=>managedImageCard(url,p.name||"Producto",`${i===0?"Imagen principal":"Imagen "+(i+1)} · ${labels[i]||("Modelo "+(i+1))}`,`<label class="admin-btn" style="display:block;text-align:center;cursor:pointer">Sustituir imagen<input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="replaceManagedImage('product','${esc(p.id)}',${i},this)"></label>`)).join("");
+    }).join("");
+
+    const {data:ms,error:me}=await supabaseClient
+      .from("product_models")
+      .select("id,product_id,name,image_urls,active")
+      .order("created_at",{ascending:true});
+    if(me)throw new Error("Modelos: "+me.message);
+    const mlist=ms||[];
+    if(!mlist.length) modelBox.innerHTML='<div class="note">No hay modelos cargados.</div>';
+    else modelBox.innerHTML=mlist.map(m=>{
+      const product=plist.find(p=>p.id===m.product_id);
+      const urls=Array.isArray(m.image_urls)?m.image_urls.filter(Boolean):[];
+      if(!urls.length) return managedImageCard("",m.name||"Modelo",`${product?.name||"Producto"} · Sin imagen`, `<label class="admin-btn" style="display:block;text-align:center;cursor:pointer">Añadir imagen<input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="replaceManagedImage('model','${esc(m.id)}',0,this)"></label>`);
+      return urls.map((url,i)=>managedImageCard(url,m.name||"Modelo",`${product?.name||"Producto"} · ${m.active===false?"Inactivo":"Activo"}`,`<label class="admin-btn" style="display:block;text-align:center;cursor:pointer">Sustituir imagen<input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="replaceManagedImage('model','${esc(m.id)}',${i},this)"></label>`)).join("");
+    }).join("");
+  }catch(e){
+    console.error("ENOC Gestión de imágenes:",e);
+    productBox.innerHTML=`<div class="note" style="color:#b42318">No se pudieron cargar las imágenes: ${esc(e.message||e)}</div>`;
+    modelBox.innerHTML='<div class="note">No se pudo cargar la lista de modelos.</div>';
+    toast("Error al cargar imágenes: "+(e.message||e),false);
+  }
+}
+
+async function replaceManagedImage(kind, recordId, imageIndex, input){
+  const file=input?.files?.[0];
+  if(!file)return;
+  input.value="";
+  if(!["image/jpeg","image/png","image/webp"].includes(file.type)){
+    toast("Selecciona una imagen JPG, PNG o WebP.",false);return;
+  }
+  if(file.size>8*1024*1024){
+    toast("La imagen supera 8 MB. Optimízala antes de subirla.",false);return;
+  }
+  if(managedImageBusy){toast("Espera a que termine el reemplazo anterior.",false);return;}
+  const label=kind==="product"?"la imagen del producto":"la imagen del modelo";
+  if(!confirm(`¿Sustituir ${label} por “${file.name}”? La imagen anterior se conservará.`))return;
+  managedImageBusy=true;
+  try{
+    const ext=file.type==="image/webp"?"webp":file.type==="image/png"?"png":"jpg";
+    const path=`products/optimized-${crypto.randomUUID()}.${ext}`;
+    const {error:upErr}=await supabaseClient.storage.from("product-images").upload(path,file,{
+      cacheControl:"31536000",upsert:false,contentType:file.type
+    });
+    if(upErr)throw new Error("No se pudo subir la imagen: "+upErr.message);
+    const {data:pub}=supabaseClient.storage.from("product-images").getPublicUrl(path);
+    const newUrl=pub?.publicUrl;
+    if(!newUrl)throw new Error("Supabase no devolvió la URL pública.");
+
+    if(kind==="product"){
+      const {data:p,error:readErr}=await supabaseClient.from("products")
+        .select("id,image_url,image_urls,image_labels").eq("id",recordId).single();
+      if(readErr)throw new Error("No se pudo leer el producto: "+readErr.message);
+      const urls=Array.isArray(p.image_urls)&&p.image_urls.length?[...p.image_urls]:(p.image_url?[p.image_url]:[]);
+      const oldUrl=urls[imageIndex]||null;
+      while(urls.length<=imageIndex)urls.push(null);
+      urls[imageIndex]=newUrl;
+      const payload={image_urls:urls.filter(Boolean),image_url:(imageIndex===0||!p.image_url)?newUrl:(p.image_url||urls[0]||null),updated_at:new Date().toISOString()};
+      const {error:saveErr}=await supabaseClient.from("products").update(payload).eq("id",recordId);
+      if(saveErr)throw new Error("Se subió la imagen, pero no se pudo actualizar el producto: "+saveErr.message);
+
+      // Actualiza solo los modelos de este producto que apuntaban a la URL anterior.
+      if(oldUrl){
+        const {data:models,error:modelErr}=await supabaseClient.from("product_models")
+          .select("id,image_urls").eq("product_id",recordId);
+        if(modelErr)throw new Error("El producto se actualizó, pero no se pudieron revisar sus modelos: "+modelErr.message);
+        for(const m of (models||[])){
+          const mu=Array.isArray(m.image_urls)?m.image_urls:[];
+          if(mu.includes(oldUrl)){
+            const next=mu.map(u=>u===oldUrl?newUrl:u);
+            const {error:updateModelErr}=await supabaseClient.from("product_models")
+              .update({image_urls:next,updated_at:new Date().toISOString()}).eq("id",m.id);
+            if(updateModelErr)throw new Error("La foto del producto se actualizó, pero un modelo no pudo sincronizarse: "+updateModelErr.message);
+          }
+        }
+      }
+    }else if(kind==="model"){
+      const {data:m,error:readErr}=await supabaseClient.from("product_models")
+        .select("id,image_urls").eq("id",recordId).single();
+      if(readErr)throw new Error("No se pudo leer el modelo: "+readErr.message);
+      const urls=Array.isArray(m.image_urls)?[...m.image_urls]:[];
+      while(urls.length<=imageIndex)urls.push(null);
+      urls[imageIndex]=newUrl;
+      const {error:saveErr}=await supabaseClient.from("product_models")
+        .update({image_urls:urls.filter(Boolean),updated_at:new Date().toISOString()}).eq("id",recordId);
+      if(saveErr)throw new Error("Se subió la imagen, pero no se pudo actualizar el modelo: "+saveErr.message);
+    }else{
+      throw new Error("Tipo de imagen no reconocido.");
+    }
+    toast("Imagen sustituida correctamente. La original se conserva.");
+    await loadManagedImages();
+    await loadProducts();
+  }catch(e){
+    console.error("ENOC reemplazo de imagen:",e);
+    toast(e.message||"No se pudo sustituir la imagen.",false);
+  }finally{
+    managedImageBusy=false;
+  }
+}
 
 async function loadCategories(){
   const {data,error}=await supabasePublicClient.from("categories").select("id,name,slug").order("name");
