@@ -4486,5 +4486,35 @@ html{scroll-padding-top:104px;overflow-x:clip}body{margin:0;background:#fff;colo
 }
 </style>
 
+
+<style id="enoc-mobile-nav-over-netlify-fix">
+/* ENOC: la navegación inferior debe quedar por encima del distintivo de Netlify.
+   Solo modifica la superposición visual en móvil; no altera las acciones de navegación. */
+@media (max-width: 760px) {
+  #mobileBottomNav.mobile-bottom-nav {
+    position: fixed !important;
+    z-index: 2147483647 !important;
+    isolation: isolate !important;
+    background: rgba(255,255,255,.98) !important;
+    pointer-events: auto !important;
+  }
+  #mobileBottomNav.mobile-bottom-nav button {
+    position: relative !important;
+    z-index: 1 !important;
+    pointer-events: auto !important;
+  }
+  /* Si el badge se inserta como elemento de la página, mantenlo debajo de la barra. */
+  #netlify-badge, .netlify-badge, [id*="netlify-badge"], [class*="netlify-badge"] {
+    z-index: 1000 !important;
+  }
+}
+</style>
+
+
+<style id="enoc-hide-product-new-badge">
+/* ENOC: ocultar únicamente la etiqueta “Nuevo” de las tarjetas de productos. */
+#products .product-new-badge, #productos .product-new-badge { display: none !important; }
+</style>
+
 </body>
 </html>
