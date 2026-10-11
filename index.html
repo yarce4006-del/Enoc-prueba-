@@ -1914,20 +1914,10 @@ function applyCasheaVisibility(){
 async function loadStoreSettings(){
   try{
     const {data,error}=await supabaseClient.from("store_settings")
-      .select("whatsapp,whatsapp_1_url,whatsapp_2_url,pago_movil_banco,pago_movil_telefono,pago_movil_cedula,binance_id,binance_email,hero_image_url,hero_title,hero_top_text,hero_description,cashea_enabled,updated_at")
+      .select("whatsapp,whatsapp_1_url,whatsapp_2_url,pago_movil_banco,pago_movil_telefono,pago_movil_cedula,binance_id,binance_email,hero_image_url,cashea_enabled,updated_at")
       .order("updated_at",{ascending:false}).limit(1).maybeSingle();
     if(error) throw error;
     if(data){
-      // El texto del hero se lee desde la misma fila compartida que modifica el administrador.
-      const heroTextFields=[
-        ["enocHeroTop",data.hero_top_text],
-        ["enocHeroTitle",data.hero_title],
-        ["enocHeroDescription",data.hero_description]
-      ];
-      heroTextFields.forEach(([id,value])=>{
-        const node=document.getElementById(id);
-        if(node && typeof value==="string" && value.trim()) node.textContent=value;
-      });
       const configuredLines = [
         {label:"Línea de atención 1",number:(data.whatsapp_1_url || data.whatsapp || "")},
         {label:"Línea de atención 2",number:(data.whatsapp_2_url || "")}
@@ -4394,6 +4384,105 @@ html{scroll-padding-top:104px;overflow-x:clip}body{margin:0;background:#fff;colo
   #productos .products-section-head { gap: 5px !important; }
   #productos .products-section-head h2 { font-size: 13.5px !important; letter-spacing: -0.9px !important; }
   #productos .products-section-head .view-all-products { min-width: 78px !important; max-width: 88px !important; padding: 7px 6px !important; font-size: 10px !important; }
+}
+</style>
+
+
+<style id="enoc-v21-floating-nav-category-size">
+/* V21: barra inferior flotante siempre sobre el contenido; el contenido reserva espacio debajo. */
+@media (max-width: 760px) {
+  html { scroll-padding-bottom: 120px !important; }
+  body { padding-bottom: calc(126px + env(safe-area-inset-bottom, 0px)) !important; }
+  #mobileBottomNav.mobile-bottom-nav {
+    position: fixed !important;
+    left: 14px !important;
+    right: 14px !important;
+    bottom: calc(9px + env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 2147483000 !important;
+    display: grid !important;
+    width: auto !important;
+    max-width: 740px !important;
+    margin: 0 auto !important;
+    padding: 7px 8px !important;
+    min-height: 76px !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    align-items: center !important;
+    gap: 2px !important;
+    background: rgba(255,255,255,.97) !important;
+    border: 1px solid rgba(217,225,242,.96) !important;
+    border-radius: 40px !important;
+    box-shadow: 0 12px 34px rgba(7,19,61,.17) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(1.25) !important;
+    backdrop-filter: blur(22px) saturate(1.25) !important;
+    isolation: isolate !important;
+    pointer-events: auto !important;
+  }
+  #mobileBottomNav button {
+    min-width: 0 !important;
+    min-height: 60px !important;
+    position: relative !important;
+    z-index: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    border-radius: 28px !important;
+    touch-action: manipulation !important;
+  }
+  #mobileBottomNav .mobile-nav-badge { z-index: 3 !important; }
+  /* Categorías compactas, pero con fotografía y textos legibles como en la referencia. */
+  #categories.categories { gap: 9px !important; padding-bottom: 9px !important; }
+  #categories.categories > .category.category-card,
+  #categories.categories > .category-skeleton {
+    flex: 0 0 132px !important;
+    flex-basis: 132px !important;
+    width: 132px !important;
+    min-width: 132px !important;
+    max-width: 132px !important;
+    height: 158px !important;
+    min-height: 158px !important;
+    max-height: 158px !important;
+    overflow: hidden !important;
+    border-radius: 15px !important;
+  }
+  #categories.categories > .category.category-card .category-card-media {
+    flex: 0 0 96px !important;
+    height: 96px !important;
+    min-height: 96px !important;
+    max-height: 96px !important;
+  }
+  #categories.categories > .category.category-card .category-card-media img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+  }
+  #categories.categories > .category.category-card .category-card-content {
+    min-height: 61px !important;
+    padding: 7px 6px 8px !important;
+  }
+  #categories.categories > .category.category-card .category-card-name {
+    font-size: 10px !important;
+    line-height: 1.15 !important;
+  }
+  #categories.categories > .category.category-card .category-card-meta {
+    font-size: 9px !important;
+    line-height: 1.15 !important;
+  }
+}
+@media (max-width: 380px) {
+  #categories.categories > .category.category-card,
+  #categories.categories > .category-skeleton {
+    flex-basis: 122px !important; width: 122px !important; min-width: 122px !important; max-width: 122px !important;
+    height: 150px !important; min-height: 150px !important; max-height: 150px !important;
+  }
+  #categories.categories > .category.category-card .category-card-media {
+    flex-basis: 90px !important; height: 90px !important; min-height: 90px !important; max-height: 90px !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #mobileBottomNav, #mobileBottomNav * { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
 </style>
 
