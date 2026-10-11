@@ -2191,41 +2191,44 @@ async function uploadHeroImage(file){
   return publicUrl;
 }
 async function saveDesign(){
+  const saved=document.getElementById("saved");
   try{
     const file=document.getElementById("heroImageFile")?.files?.[0];
     let heroUrl="";
     if(file){
       heroUrl=await uploadHeroImage(file);
-      document.getElementById("heroImageFile").value="";
-
-      const current=await loadStoreSettings();
-      const payload={hero_image_url:heroUrl,updated_at:new Date().toISOString()};
-      const result=current?.id
-        ? await supabaseClient.from("store_settings").update(payload).eq("id",current.id).select().single()
-        : await supabaseClient.from("store_settings").insert(payload).select().single();
-
-      if(result.error){
-        throw new Error("La imagen se subió, pero no se pudo guardar la URL en Supabase: "+result.error.message);
-      }
-
-      // Show the actual public Storage URL, not only the local blob preview.
-      const preview=document.getElementById("heroImagePreview");
-      if(preview){
-        preview.innerHTML=`<img src="${heroUrl}" alt="Hero guardado"
-          style="display:block;width:100%;max-width:720px;max-height:280px;object-fit:cover;border-radius:14px;border:1px solid #d9e0ea">`;
-      }
     }
-
-    localStorage.setItem("enoc_identity_title",document.getElementById("identityTitle").value);
-    localStorage.setItem("enoc_identity_top",document.getElementById("identityTop").value);
-    localStorage.setItem("enoc_identity_description",document.getElementById("identityDescription").value);
-
-    document.getElementById("saved").textContent=heroUrl
-      ? "Diseño e imagen del hero guardados en Supabase."
-      : "Diseño guardado.";
-    toast("Diseño actualizado.");
+    const current=await loadStoreSettings();
+    const payload={
+      hero_title:document.getElementById("identityTitle").value.trim(),
+      hero_top_text:document.getElementById("identityTop").value.trim(),
+      hero_description:document.getElementById("identityDescription").value.trim(),
+      updated_at:new Date().toISOString()
+    };
+    if(heroUrl) payload.hero_image_url=heroUrl;
+    const result=current?.id
+      ? await supabaseClient.from("store_settings").update(payload).eq("id",current.id).select().single()
+      : await supabaseClient.from("store_settings").insert(payload).select().single();
+    if(result.error){
+      throw new Error("No se pudo guardar el diseño en Supabase. Verifica que ejecutaste la migración SQL de ENOC: "+result.error.message);
+    }
+    if(file) document.getElementById("heroImageFile").value="";
+    // Compatibilidad local; la fuente compartida entre dispositivos es Supabase.
+    try{
+      localStorage.setItem("enoc_identity_title",payload.hero_title);
+      localStorage.setItem("enoc_identity_top",payload.hero_top_text);
+      localStorage.setItem("enoc_identity_description",payload.hero_description);
+    }catch(_){}
+    const preview=document.getElementById("heroImagePreview");
+    if(preview && heroUrl){
+      preview.innerHTML=`<img src="${heroUrl}" alt="Hero guardado" style="display:block;width:100%;max-width:720px;max-height:280px;object-fit:cover;border-radius:14px;border:1px solid #d9e0ea">`;
+    }
+    if(saved) saved.textContent="Diseño guardado en Supabase. El catálogo lo leerá desde la misma configuración compartida.";
+    toast("Diseño guardado en Supabase.");
+    await loadStoreSettings();
   }catch(error){
-    console.error(error);
+    console.error("ENOC / saveDesign:",error);
+    if(saved) saved.textContent=error.message||"No se pudo guardar el diseño.";
     toast(error.message||"No se pudo guardar el diseño.",false);
   }
 }
@@ -2258,7 +2261,7 @@ async function loadAutomaticBCVRateAdmin(){
 async function loadStoreSettings(){
   const {data, error}=await supabaseClient
     .from("store_settings")
-    .select("id, whatsapp, whatsapp_1_url, whatsapp_2_url, pago_movil_banco, pago_movil_telefono, pago_movil_cedula, binance_id, binance_email, hero_image_url, cashea_enabled, updated_at")
+    .select("id, whatsapp, whatsapp_1_url, whatsapp_2_url, pago_movil_banco, pago_movil_telefono, pago_movil_cedula, binance_id, binance_email, hero_image_url, hero_title, hero_top_text, hero_description, cashea_enabled, updated_at")
     .order("updated_at", {ascending:false})
     .limit(1)
     .maybeSingle();
@@ -2276,6 +2279,16 @@ async function loadStoreSettings(){
     document.getElementById("cfgBinanceId").value=data.binance_id||"";
     document.getElementById("cfgBinanceEmail").value=data.binance_email||"";
     document.getElementById("cfgCasheaEnabled").checked = data.cashea_enabled !== false;
+    const title=document.getElementById("identityTitle");
+    const top=document.getElementById("identityTop");
+    const description=document.getElementById("identityDescription");
+    if(title && data.hero_title) title.value=data.hero_title;
+    if(top && data.hero_top_text) top.value=data.hero_top_text;
+    if(description && data.hero_description) description.value=data.hero_description;
+    const preview=document.getElementById("heroImagePreview");
+    if(preview && data.hero_image_url && !document.getElementById("heroImageFile")?.files?.length){
+      preview.innerHTML=`<img src="${String(data.hero_image_url).replace(/&/g,"&amp;").replace(/"/g,"&quot;")}" alt="Hero guardado" style="display:block;width:100%;max-width:720px;max-height:280px;object-fit:cover;border-radius:14px;border:1px solid #d9e0ea">`;
+    }
   }
   return data||null;
 }
