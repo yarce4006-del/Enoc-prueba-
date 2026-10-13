@@ -1626,7 +1626,7 @@ html,body{width:100%;max-width:100%;overflow-x:hidden!important}
 })();
 </script>
 <script>
-// Sincroniza los textos del hero guardados por el Dashboard en el mismo origen.
+// Compatibilidad visual inicial: la configuración remota de Supabase se aplica después y prevalece.
 (function applyENOCStoredHeroText(){
   const keys = {enoc_identity_top:"enocHeroTop",enoc_identity_title:"enocHeroTitle",enoc_identity_description:"enocHeroDescription"};
   function apply(){
@@ -1914,21 +1914,22 @@ function applyCasheaVisibility(){
 async function loadStoreSettings(){
   try{
     const {data,error}=await supabaseClient.from("store_settings")
-      .select("id,whatsapp,whatsapp_1_url,whatsapp_2_url,pago_movil_banco,pago_movil_telefono,pago_movil_cedula,binance_id,binance_email,hero_image_url,hero_title,hero_top_text,hero_description,cashea_enabled,updated_at")
+      .select("whatsapp,whatsapp_1_url,whatsapp_2_url,pago_movil_banco,pago_movil_telefono,pago_movil_cedula,binance_id,binance_email,hero_image_url,hero_title,hero_top_text,hero_description,cashea_enabled,updated_at")
       .order("updated_at",{ascending:false}).limit(1).maybeSingle();
     if(error) throw error;
     if(data){
-      // Los textos del hero se leen desde Supabase, igual que la imagen.
-      // Así se reflejan los cambios del Dashboard en cualquier dispositivo/origen.
-      const heroTextFields = [
-        ["enocHeroTitle", data.hero_title],
-        ["enocHeroTop", data.hero_top_text],
-        ["enocHeroDescription", data.hero_description]
+      // La configuración compartida de Supabase es la fuente de verdad para el hero.
+      // Esto permite que el Dashboard y el catálogo funcionen en dominios/dispositivos distintos.
+      const heroTextFields=[
+        ["enocHeroTop",data.hero_top_text],
+        ["enocHeroTitle",data.hero_title],
+        ["enocHeroDescription",data.hero_description]
       ];
-      heroTextFields.forEach(([id, value]) => {
-        const node = document.getElementById(id);
-        if(node && value !== null && value !== undefined) node.textContent = String(value);
+      heroTextFields.forEach(([id,value])=>{
+        const node=document.getElementById(id);
+        if(node && value!==null && value!==undefined) node.textContent=String(value);
       });
+
       const configuredLines = [
         {label:"Línea de atención 1",number:(data.whatsapp_1_url || data.whatsapp || "")},
         {label:"Línea de atención 2",number:(data.whatsapp_2_url || "")}

@@ -653,7 +653,7 @@ main{min-width:0}
       
 
       <section id="diseno" class="section">
-        <div class="hero"><h1>Diseño</h1><p>Configuraciones visuales locales hasta que exista una tabla de configuración en Supabase.</p></div>
+        <div class="hero"><h1>Diseño</h1><p>Configuración visual compartida con el catálogo mediante Supabase.</p></div>
         <div class="card glass">
           <h2>Hero de la página principal</h2>
           <div class="formgrid">
@@ -2192,40 +2192,62 @@ async function uploadHeroImage(file){
 }
 async function saveDesign(){
   const saved=document.getElementById("saved");
+  // Capturar primero los valores escritos por el usuario. No llamar loadStoreSettings()
+  // aquí porque esa función repinta los campos y podría borrar las ediciones pendientes.
+  const titleInput=document.getElementById("identityTitle");
+  const topInput=document.getElementById("identityTop");
+  const descriptionInput=document.getElementById("identityDescription");
+  const fileInput=document.getElementById("heroImageFile");
+  const file=fileInput?.files?.[0];
+  const payload={
+    hero_title:titleInput?.value?.trim() ?? "",
+    hero_top_text:topInput?.value?.trim() ?? "",
+    hero_description:descriptionInput?.value?.trim() ?? "",
+    updated_at:new Date().toISOString()
+  };
   try{
-    const file=document.getElementById("heroImageFile")?.files?.[0];
-    let heroUrl="";
+    if(saved) saved.textContent="Guardando diseño en la configuración compartida…";
     if(file){
-      heroUrl=await uploadHeroImage(file);
+      payload.hero_image_url=await uploadHeroImage(file);
     }
-    const current=await loadStoreSettings();
-    const payload={
-      hero_title:document.getElementById("identityTitle").value.trim(),
-      hero_top_text:document.getElementById("identityTop").value.trim(),
-      hero_description:document.getElementById("identityDescription").value.trim(),
-      updated_at:new Date().toISOString()
-    };
-    if(heroUrl) payload.hero_image_url=heroUrl;
+
+    // Consultar solo el ID, sin modificar los campos del formulario.
+    const {data:current,error:lookupError}=await supabaseClient
+      .from("store_settings")
+      .select("id")
+      .order("updated_at",{ascending:false})
+      .limit(1)
+      .maybeSingle();
+    if(lookupError) throw new Error("No se pudo consultar store_settings: "+lookupError.message);
+
     const result=current?.id
-      ? await supabaseClient.from("store_settings").update(payload).eq("id",current.id).select().single()
-      : await supabaseClient.from("store_settings").insert(payload).select().single();
+      ? await supabaseClient.from("store_settings").update(payload).eq("id",current.id).select("id,hero_title,hero_top_text,hero_description,hero_image_url,updated_at").single()
+      : await supabaseClient.from("store_settings").insert(payload).select("id,hero_title,hero_top_text,hero_description,hero_image_url,updated_at").single();
+
     if(result.error){
-      throw new Error("No se pudo guardar el diseño en Supabase. Verifica que ejecutaste la migración SQL de ENOC: "+result.error.message);
+      const message=result.error.message||"Error desconocido";
+      if(/hero_title|hero_top_text|hero_description|column/i.test(message)){
+        throw new Error("La base de datos todavía no tiene los campos de texto del banner. Ejecuta el archivo ENOC_MIGRACION_TEXTO_HERO.sql en Supabase → SQL Editor. Detalle: "+message);
+      }
+      throw new Error("No se pudo guardar el diseño en Supabase: "+message);
     }
-    if(file) document.getElementById("heroImageFile").value="";
-    // Compatibilidad local; la fuente compartida entre dispositivos es Supabase.
+
+    if(fileInput && file) fileInput.value="";
     try{
       localStorage.setItem("enoc_identity_title",payload.hero_title);
       localStorage.setItem("enoc_identity_top",payload.hero_top_text);
       localStorage.setItem("enoc_identity_description",payload.hero_description);
     }catch(_){}
+
     const preview=document.getElementById("heroImagePreview");
+    const heroUrl=payload.hero_image_url || result.data?.hero_image_url;
     if(preview && heroUrl){
-      preview.innerHTML=`<img src="${heroUrl}" alt="Hero guardado" style="display:block;width:100%;max-width:720px;max-height:280px;object-fit:cover;border-radius:14px;border:1px solid #d9e0ea">`;
+      const safeUrl=String(heroUrl).replace(/&/g,"&amp;").replace(/"/g,"&quot;");
+      preview.innerHTML=`<img src="${safeUrl}" alt="Banner guardado" style="display:block;width:100%;max-width:720px;max-height:280px;object-fit:cover;border-radius:14px;border:1px solid #d9e0ea">`;
     }
-    if(saved) saved.textContent="Diseño guardado en Supabase. El catálogo lo leerá desde la misma configuración compartida.";
-    toast("Diseño guardado en Supabase.");
-    await loadStoreSettings();
+    if(saved) saved.textContent="Diseño guardado en Supabase. El catálogo cargará los textos y la imagen desde la configuración compartida.";
+    toast("Diseño guardado correctamente.");
+    // Refrescar únicamente la vista previa de imagen; no sobrescribir el formulario.
   }catch(error){
     console.error("ENOC / saveDesign:",error);
     if(saved) saved.textContent=error.message||"No se pudo guardar el diseño.";
