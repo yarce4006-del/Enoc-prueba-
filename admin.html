@@ -678,6 +678,121 @@ body.cx-product-modal-open{overflow:hidden}
 @media(max-width:1250px){.fiscal-head{flex-direction:column}.fiscal-info{max-width:none}.fiscal-tools{grid-template-columns:1fr 1fr}.fiscal-tools .fiscal-field:nth-child(3){grid-column:1/-1}.fiscal-layout{grid-template-columns:minmax(0,1fr)}.fiscal-detail-card{max-width:none}.fiscal-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:15px}.fiscal-summary-item:nth-child(3){border-right:0}}
 @media(max-width:650px){.fiscal-title h1{font-size:24px}.fiscal-title p{font-size:13px}.fiscal-title-icon{width:45px;height:45px;flex-basis:45px}.fiscal-stats{grid-template-columns:1fr;gap:8px}.fiscal-stat{min-height:85px;padding:12px}.fiscal-stat-icon{width:45px;height:45px;flex-basis:45px}.fiscal-stat-value{font-size:23px}.fiscal-tools{grid-template-columns:1fr 1fr}.fiscal-tools .fiscal-field:nth-child(3){grid-column:1/-1}.fiscal-tools .fiscal-field:nth-child(4){grid-column:1/-1}.fiscal-tools>.fiscal-btn{grid-column:1/-1;width:100%}.fiscal-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:14px}.fiscal-summary-item{padding:0 8px}.fiscal-summary-item:nth-child(2n){border-right:0}.fiscal-summary-item:nth-child(3){border-right:1px solid #e4ebf6}.fiscal-summary-item strong{font-size:16px}.fiscal-detail-register{grid-template-columns:1fr}.fiscal-detail-register button{width:100%}}
 
+
+.cx-exchange-form-title{grid-column:1/-1;font-size:14px;font-weight:850;color:#10264b;line-height:1.35}
+.cx-exchange-form-subtitle{grid-column:1/-1;color:#526b96;font-size:12px;font-weight:700}
+.cx-exchange-actions{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.cx-exchange-feedback{grid-column:1/-1;color:#31517f;font-size:12px;line-height:1.5;font-weight:700;overflow-wrap:anywhere}
+.cx-exchange-history-card{padding:12px 14px;border:1px solid #dce6f6;border-radius:12px;background:#fff;margin-top:9px;min-width:0}
+.cx-exchange-history-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:#20395f;font-size:12px}
+.cx-exchange-history-top span,.cx-exchange-history-meta{font-size:11px;color:#637795}
+.cx-exchange-history-route{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:9px 0;color:#314766;font-size:12px;overflow-wrap:anywhere}
+.cx-exchange-history-meta{line-height:1.5;overflow-wrap:anywhere}
+@media(max-width:620px){.cx-exchange-actions{display:grid;grid-template-columns:1fr}.cx-exchange-actions button{width:100%;min-height:44px}.cx-exchange-form select,.cx-exchange-form input{font-size:14px;min-height:44px}.cx-exchange-history-top{display:grid;gap:4px}.cx-exchange-history-route{align-items:flex-start;flex-direction:column;gap:4px}}
+
+/* Catálogo jerárquico ENOC: categorías > productos > modelos > variantes */
+.catalog-hierarchy{width:100%;max-width:1050px;margin:0 auto;color:#102044}
+.catalog-loading{padding:36px 12px;text-align:center;color:#64789b}
+.catalog-spinner{display:inline-block;width:18px;height:18px;border:2px solid #dce6fb;border-top-color:#0000fe;border-radius:50%;vertical-align:middle;margin-right:8px;animation:catalogSpin .7s linear infinite}
+@keyframes catalogSpin{to{transform:rotate(360deg)}}
+.catalog-head{display:flex;align-items:center;gap:12px;margin:2px 0 4px;min-width:0}
+.catalog-head-copy{flex:1;min-width:0}
+.catalog-head h2{font-size:clamp(22px,3vw,29px);font-weight:800;letter-spacing:-.04em;line-height:1.15;overflow-wrap:anywhere}
+.catalog-head p{font-size:13px;color:#64789b;margin-top:5px}
+.catalog-head-mark{width:38px;height:38px;border-radius:50%;background:#07133d;color:white;display:grid;place-items:center;font-weight:800;flex:none}
+.catalog-back{width:38px;height:38px;border:1px solid #e2e9f5;background:#fff;border-radius:12px;font-size:28px;line-height:1;color:#07133d;flex:none}
+.catalog-breadcrumb{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:9px 0 16px;color:#64789b;font-size:12px}
+.catalog-breadcrumb button{color:#0000fe;font-size:12px;padding:3px 0}
+.catalog-summary,.catalog-count-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 0 10px;color:#64789b;font-size:12px;font-weight:650}
+.catalog-count-note{font-weight:500;text-align:right}
+.catalog-toolbar{display:flex;gap:8px;align-items:center;margin:12px 0 15px;min-width:0}
+.catalog-search{display:flex;align-items:center;gap:10px;height:46px;min-width:0;flex:1;padding:0 13px;border:1px solid #dce5f6;border-radius:13px;background:#fff;box-shadow:0 3px 10px #173d7908;color:#29466f}
+.catalog-search>span{font-size:25px;line-height:1;color:#28436c}
+.catalog-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#102044;font:inherit;font-size:13px}
+.catalog-search input::placeholder{color:#8090ad}
+.catalog-search-full{width:100%;margin:10px 0 15px}
+.catalog-filter{width:46px;height:46px;border:1px solid #dce5f6;border-radius:13px;background:#fff;color:#193b72;font-size:22px;flex:none}
+.catalog-add{min-height:44px;white-space:nowrap;padding:0 14px;border-radius:12px;background:#0000fe;color:#fff;font-size:12px}
+.catalog-list{display:flex;flex-direction:column;gap:11px}
+.catalog-category-card,.catalog-product-card,.catalog-model-card{width:100%;min-width:0;border:1px solid #e6ecf7;border-radius:16px;background:#fff;box-shadow:0 4px 14px #173d7908;position:relative}
+.catalog-category-card{display:flex;align-items:center;gap:13px;padding:12px;text-align:left}
+.catalog-category-card:hover,.catalog-product-card:hover,.catalog-model-card:hover{border-color:#c8d7ff;box-shadow:0 7px 18px #173d7910}
+.catalog-thumb{width:76px;height:82px;flex:none;display:grid;place-items:center;overflow:hidden;border-radius:12px;background:#f0f3f9;color:#9aa8bf}
+.catalog-thumb img{display:block;width:100%;height:100%;object-fit:contain}
+.catalog-thumb-placeholder{font-size:24px}
+.catalog-card-copy,.catalog-product-main,.catalog-variant-copy{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;flex:1}
+.catalog-card-copy strong,.catalog-product-main strong,.catalog-variant-copy strong{font-size:14px;line-height:1.35;color:#102044;overflow-wrap:anywhere}
+.catalog-card-copy small,.catalog-product-main small,.catalog-variant-copy small{font-size:12px;line-height:1.35;color:#64789b;overflow-wrap:anywhere}
+.catalog-status{display:inline-flex;align-items:center;gap:6px;border-radius:7px;padding:4px 9px;font-size:11px;font-weight:650;white-space:nowrap}
+.catalog-status i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.catalog-status.is-on{background:#e7f8ef;color:#087b50}
+.catalog-status.is-off{background:#fff0f0;color:#c62828}
+.catalog-chevron{font-size:29px;color:#0000fe;line-height:1;flex:none;padding:0 3px}
+.catalog-product-card,.catalog-model-card{display:grid;grid-template-columns:76px minmax(0,1fr) 30px;align-items:center;gap:12px;padding:12px}
+.catalog-product-main{align-self:center}
+.catalog-more,.catalog-chevron-button{width:30px;height:38px;border-radius:9px;color:#233e6c;font-size:23px;line-height:1}
+.catalog-more:hover,.catalog-chevron-button:hover{background:#edf2ff;color:#0000fe}
+.catalog-card-actions{grid-column:1/-1;display:flex;gap:7px;flex-wrap:wrap;border-top:1px solid #edf1f8;padding-top:10px;margin-top:1px}
+.catalog-card-actions .btn{min-height:38px;padding:0 12px;font-size:12px}
+.catalog-more-action{min-height:38px;border:1px solid #e1e8f4;border-radius:10px;padding:0 11px;font-size:12px;color:#314c76;background:#fff}
+.catalog-more-action.danger{color:#c62828}
+.catalog-product-card .catalog-card-actions{display:none}
+.catalog-product-card.show-actions .catalog-card-actions{display:flex}
+.catalog-model-card .catalog-card-actions{grid-column:1/-1}
+.catalog-empty{padding:30px 18px;border:1px dashed #d5dfef;border-radius:15px;background:#fff;color:#64789b;text-align:center;font-size:13px;line-height:1.5}
+.catalog-error{color:#b42318;background:#fff8f8}
+.catalog-model-summary{display:grid;grid-template-columns:64px minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px;background:#fff;border:1px solid #e4eaf5;border-radius:15px}
+.catalog-model-summary .catalog-thumb{width:64px;height:70px}
+.catalog-model-summary>div:nth-child(2){display:flex;flex-direction:column;gap:5px;min-width:0}
+.catalog-model-summary strong{font-size:14px;overflow-wrap:anywhere}
+.catalog-model-summary small{font-size:11px;color:#64789b;overflow-wrap:anywhere}
+.catalog-model-summary .btn{min-height:38px;padding:0 11px;font-size:12px}
+.catalog-tabs{display:flex;gap:22px;border-bottom:1px solid #e2e9f5;margin:14px 0 6px;overflow:auto}
+.catalog-tabs span{padding:12px 2px;color:#64789b;font-size:12px;white-space:nowrap}
+.catalog-tabs span.active{color:#0000fe;font-weight:750;border-bottom:3px solid #0000fe}
+.catalog-tabs button{padding:12px 2px;color:#64789b;font-size:12px;white-space:nowrap;border-bottom:3px solid transparent;min-height:42px}.catalog-tabs button.active{color:#0000fe;font-weight:750;border-bottom-color:#0000fe}.catalog-image-panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:12px}.catalog-image-panel h3{margin:0 0 8px;font-size:16px}.catalog-image-panel p{font-size:13px;color:#526789;margin:6px 0}.catalog-image-help{font-size:12px!important;color:#71809b!important;line-height:1.5}.catalog-image-preview{width:100%;max-width:360px;aspect-ratio:4/3;border:1px dashed #d4deef;border-radius:12px;background:#f6f8fc;display:grid;place-items:center;overflow:hidden;margin:14px 0}.catalog-image-preview img{width:100%;height:100%;object-fit:contain}.catalog-image-empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px;text-align:center;color:#64789b}.catalog-image-empty span{font-size:32px;color:#9aabc5}.catalog-image-empty strong{font-size:13px;color:#334766}.catalog-image-empty small{font-size:12px}.catalog-image-file-label{display:flex;flex-direction:column;gap:8px;font-size:12px;font-weight:700;color:#31415f;margin:12px 0}.catalog-image-file-label input{width:100%;border:1px solid #d9e2f2;border-radius:10px;padding:12px;background:#fff;font:inherit;font-size:13px}.catalog-image-panel .btn{width:100%;max-width:360px;margin-top:8px}
+
+.catalog-add-variant{margin:12px 0;padding:14px;border:1px solid #dfe8fa;border-radius:14px;background:#fff;display:flex;flex-direction:column;gap:12px}
+.catalog-add-variant>strong{font-size:13px}
+.catalog-variant-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.catalog-variant-fields label,.catalog-stock-edit{display:flex;flex-direction:column;gap:5px;font-size:11px;color:#64789b;font-weight:650;min-width:0}
+.catalog-variant-fields input,.catalog-stock-edit input{width:100%;min-width:0;height:39px;border:1px solid #dce5f6;border-radius:9px;padding:0 10px;background:#fff;color:#102044;font:inherit;font-size:13px}
+.catalog-add-variant .btn{min-height:42px}
+.catalog-feedback{font-size:12px;color:#087b50}
+.catalog-variants-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.catalog-variant-row{display:grid;grid-template-columns:48px minmax(0,1fr) 78px auto;align-items:center;gap:10px;padding:9px;border:1px solid #e7edf7;border-radius:13px;background:#fff}
+.catalog-variant-row .catalog-thumb{width:48px;height:52px;border-radius:9px}
+.catalog-variant-copy{gap:3px}
+.catalog-variant-copy strong{font-size:12px}
+.catalog-variant-copy small{font-size:11px}
+.catalog-stock-edit input{height:35px}
+.catalog-save-stock{min-height:35px!important;padding:0 9px!important;font-size:11px!important}
+.catalog-save-stock.is-saved{border-color:#b9ead2;color:#087b50}
+@media(max-width:600px){
+ .catalog-hierarchy{margin:0 -2px}
+ .catalog-head{gap:9px}
+ .catalog-head h2{font-size:22px}
+ .catalog-head-mark{width:34px;height:34px}
+ .catalog-toolbar{gap:7px;flex-wrap:wrap}
+ .catalog-toolbar .catalog-add{width:100%;order:3}
+ .catalog-filter{width:44px;height:44px}
+ .catalog-category-card{padding:10px;gap:10px}
+ .catalog-category-card .catalog-thumb{width:72px;height:76px}
+ .catalog-card-copy strong,.catalog-product-main strong{font-size:13px}
+ .catalog-product-card,.catalog-model-card{grid-template-columns:64px minmax(0,1fr) 26px;gap:9px;padding:10px}
+ .catalog-product-card>.catalog-thumb,.catalog-model-card>.catalog-thumb{width:64px;height:72px}
+ .catalog-product-card .catalog-card-actions,.catalog-model-card .catalog-card-actions{gap:6px}
+ .catalog-card-actions .btn,.catalog-more-action{flex:1;min-width:calc(50% - 6px);padding:0 8px}
+ .catalog-model-summary{grid-template-columns:54px minmax(0,1fr) auto;gap:8px;padding:9px}
+ .catalog-model-summary .catalog-thumb{width:54px;height:60px}
+ .catalog-model-summary .btn{padding:0 8px}
+ .catalog-variant-row{grid-template-columns:40px minmax(0,1fr) 65px;gap:7px}
+ .catalog-variant-row .catalog-thumb{width:40px;height:46px}
+ .catalog-save-stock{grid-column:2/-1;width:100%}
+ .catalog-variant-fields{gap:8px}
+}
+@media(min-width:700px){.catalog-list{gap:13px}.catalog-category-card{padding:14px}.catalog-product-card,.catalog-model-card{padding:14px}.catalog-thumb{width:84px;height:88px}}
+
 </style>
 <style id="enoc-mobile-optimization-v1">
 /* ENOC V15 — optimización móvil incremental */
@@ -995,20 +1110,91 @@ async function loadAutomaticVatRate(){
   input.dispatchEvent(new Event("input",{bubbles:true}));
 }
 async function moduleProducts(){
- moduleShell("Productos","Consultar y administrar productos de la tienda.",`<button class="btn" id="addProduct">+ Nuevo producto</button><div id="productsWorkspace"></div>`);
- const w=$("productsWorkspace"); w.innerHTML="Cargando productos…";
- try{
-  const [pr,cr]=await Promise.all([db.from("products").select("id,sku,name,category_id,price,active,created_at,image_url,image_urls,image_labels,description").order("created_at",{ascending:false}),db.from("categories").select("id,name")]);
-  if(pr.error)throw pr.error;if(cr.error)throw cr.error;
-  const cats=new Map((cr.data||[]).map(c=>[c.id,c.name]));
-  w.innerHTML=tableWrap(["Imagen","SKU","Producto","Categoría","Precio","Estado","Acciones"],(pr.data||[]).map(p=>{const img=(Array.isArray(p.image_urls)&&p.image_urls[0])||p.image_url||"";return `<tr><td><div style="width:54px;height:60px;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#f4f6fb;display:grid;place-items:center">${img?`<img src="${esc(img)}" alt="${esc(p.name)}" loading="lazy" style="width:100%;height:100%;object-fit:cover">`:'<span style="font-size:10px;color:var(--mute)">Sin imagen</span>'}</div></td><td>${esc(p.sku||"—")}</td><td><b>${esc(p.name)}</b></td><td>${esc(cats.get(p.category_id)||"—")}</td><td>${money(p.price)}</td><td>${p.active===false?"Inactivo":"Activo"}</td><td><div style="display:flex;gap:5px;flex-wrap:wrap"><button class="btn ghost" data-editp="${p.id}">Editar</button> <button class="btn ghost" data-modelsp="${p.id}">Modelos</button> <button class="btn ghost" data-togglep="${p.id}" data-active="${p.active!==false}">${p.active===false?"Activar":"Desactivar"}</button> <button class="btn ghost" data-deletep="${p.id}" style="color:#b42318">Eliminar</button></div></td></tr>`}).join(""));
-  $("moduleMsg").textContent=`${(pr.data||[]).length} producto(s) cargados.`;
-  $("addProduct").onclick=()=>editProductForm();
-  w.querySelectorAll("[data-editp]").forEach(b=>b.onclick=()=>editProductForm((pr.data||[]).find(p=>p.id===b.dataset.editp)));
-  w.querySelectorAll("[data-modelsp]").forEach(b=>b.onclick=()=>openStandaloneModels((pr.data||[]).find(p=>p.id===b.dataset.modelsp)));
-  w.querySelectorAll("[data-togglep]").forEach(b=>b.onclick=async()=>{try{const {error}=await db.from("products").update({active:b.dataset.active!=="true"}).eq("id",b.dataset.togglep);if(error)throw error;await moduleProducts()}catch(e){showModuleError(e)}});
-  w.querySelectorAll("[data-deletep]").forEach(b=>b.onclick=async()=>{const p=(pr.data||[]).find(x=>x.id===b.dataset.deletep);if(!p||!confirm(`¿Eliminar el producto "${p.name}"? Primero se revisarán sus modelos y variantes.`))return;try{const mr=await db.from("product_models").select("id").eq("product_id",p.id);if(mr.error)throw mr.error;const ids=(mr.data||[]).map(x=>x.id);if(ids.length){const vr=await db.from("product_model_variants").delete().in("model_id",ids);if(vr.error)throw vr.error;const dr=await db.from("product_models").delete().in("id",ids);if(dr.error)throw dr.error}const prdel=await db.from("products").delete().eq("id",p.id);if(prdel.error)throw prdel.error;await moduleProducts()}catch(e){showModuleError(e)}});
- }catch(e){w.innerHTML="";showModuleError(e)}
+ moduleShell("Catálogo","Gestiona categorías, productos, modelos y variantes desde un solo panel.",`
+  <div id="catalogHierarchy" class="catalog-hierarchy"><div class="catalog-loading"><span class="catalog-spinner"></span> Cargando catálogo…</div></div>`);
+ const w=$("catalogHierarchy");
+ let categories=[],products=[],models=[],selectedCategory=null,selectedProduct=null,selectedModel=null,level=1,search="",variantSearch="",modelTab="variants";
+ const imgOf=p=>(Array.isArray(p?.image_urls)&&p.image_urls[0])||p?.image_url||(Array.isArray(p?.image_urls)&&p.image_urls.find(Boolean))||"";
+ const moneyLabel=v=>v===null||v===undefined||v===""?"—":money(v);
+ const activeTag=active=>`<span class="catalog-status ${active===false?"is-off":"is-on"}"><i></i>${active===false?"Inactivo":"Activo"}</span>`;
+ const imageBox=(url,label,cls="")=>`<div class="catalog-thumb ${cls}">${url?`<img src="${esc(url)}" alt="${esc(label||"Imagen del producto")}" loading="lazy">`:`<span class="catalog-thumb-placeholder">▧</span>`}</div>`;
+ const loadBase=async()=>{
+  const [cr,pr,mr]=await Promise.all([
+   db.from("categories").select("id,name,slug").order("name"),
+   db.from("products").select("id,sku,name,category_id,price,active,created_at,image_url,image_urls,image_labels,description").order("created_at",{ascending:false}),
+   db.from("product_models").select("id,product_id,name,image_urls,active,created_at").order("created_at",{ascending:true})
+  ]);
+  if(cr.error)throw cr.error;if(pr.error)throw pr.error;if(mr.error)throw mr.error;
+  categories=cr.data||[];products=pr.data||[];models=mr.data||[];
+ };
+ const back=()=>{if(level===4){level=3;variantSearch=""}else if(level===3){level=2;selectedModel=null;search=""}else if(level===2){level=1;selectedProduct=null;search=""}render()};
+ const crumb=()=>`<div class="catalog-breadcrumb"><button type="button" data-catalog-home>Catálogo</button>${selectedCategory&&level>1?`<span>/</span><button type="button" data-catalog-cat>${esc(selectedCategory.name)}</button>`:""}${selectedProduct&&level>2?`<span>/</span><button type="button" data-catalog-product>${esc(selectedProduct.name)}</button>`:""}${selectedModel&&level>3?`<span>/</span><span>${esc(selectedModel.name||"Modelo")}</span>`:""}</div>`;
+ const top=(title,subtitle,backButton=false)=>`<div class="catalog-head">${backButton?`<button class="catalog-back" type="button" data-catalog-back aria-label="Volver">‹</button>`:""}<div class="catalog-head-copy"><h2>${esc(title)}</h2><p>${esc(subtitle||"")}</p></div><span class="catalog-head-mark">E</span></div>${level>1?crumb():""}`;
+ const toolbar=(placeholder,addLabel,addAction)=>`<div class="catalog-toolbar"><label class="catalog-search"><span>⌕</span><input id="catalogSearch" value="${esc(search)}" placeholder="${placeholder}" autocomplete="off"></label><button class="catalog-filter" type="button" title="Filtros" aria-label="Filtros">☷</button>${addLabel?`<button class="btn catalog-add" type="button" data-catalog-add>${addLabel}</button>`:""}</div>`;
+ function bindCommon(){
+  w.querySelector("[data-catalog-back]")?.addEventListener("click",back);
+  w.querySelector("[data-catalog-home]")?.addEventListener("click",()=>{level=1;selectedCategory=null;selectedProduct=null;selectedModel=null;search="";render()});
+  w.querySelector("[data-catalog-cat]")?.addEventListener("click",()=>{level=2;selectedProduct=null;selectedModel=null;search="";render()});
+  w.querySelector("[data-catalog-product]")?.addEventListener("click",()=>{level=3;selectedModel=null;search="";render()});
+  const si=w.querySelector("#catalogSearch");if(si){si.addEventListener("input",()=>{search=si.value;const pos=si.selectionStart;render();const next=w.querySelector("#catalogSearch");if(next){next.focus();next.setSelectionRange(pos,pos)}})}
+ }
+ async function render(){
+  if(!w.isConnected)return;
+  const title=level===1?"Catálogo":level===2?selectedCategory?.name||"Productos":level===3?selectedProduct?.name||"Modelos":selectedModel?.name||"Variantes e inventario";
+  const subtitle=level===1?"Selecciona una categoría para gestionar":level===2?"Productos de la categoría seleccionada":level===3?"Modelos del producto seleccionado":"Tallas, colores, precios y existencias";
+  let html=top(title,subtitle,level>1);
+  if(level===1){
+   const visible=categories.filter(c=>c.name.toLowerCase().includes(search.toLowerCase()));
+   html+=`<div class="catalog-summary"><span>${categories.length} categoría(s)</span><button class="btn catalog-add" data-catalog-add type="button">+ Nueva categoría</button></div><label class="catalog-search catalog-search-full"><span>⌕</span><input id="catalogSearch" value="${esc(search)}" placeholder="Buscar categorías..." autocomplete="off"></label><div class="catalog-list">${visible.map(c=>{const cp=products.filter(p=>p.category_id===c.id),cm=models.filter(m=>cp.some(p=>p.id===m.product_id)),first=cp.map(imgOf).find(Boolean);return `<button type="button" class="catalog-category-card" data-category="${c.id}">${imageBox(first,c.name)}<span class="catalog-card-copy"><strong>${esc(c.name)}</strong><small>${cp.length} producto(s) · ${cm.length} modelo(s)</small></span><span class="catalog-chevron">›</span></button>`}).join("")||`<div class="catalog-empty">No se encontraron categorías.</div>`}</div>`;
+  }else if(level===2){
+   const list=products.filter(p=>p.category_id===selectedCategory?.id&&(`${p.name} ${p.sku||""}`).toLowerCase().includes(search.toLowerCase()));
+   html+=`<div class="catalog-count-row"><span>${list.length} producto(s)</span><span class="catalog-count-note">En ${esc(selectedCategory?.name||"categoría")}</span></div>${toolbar("Buscar productos...","+ Nuevo producto")}<div class="catalog-list">${list.map(p=>{const pc=models.filter(m=>m.product_id===p.id);return `<article class="catalog-product-card">${imageBox(imgOf(p),p.name)}<button type="button" class="catalog-product-main" data-open-product="${p.id}"><strong>${esc(p.name)}</strong><small>SKU: ${esc(p.sku||"—")}</small><small>${pc.length} modelo(s) · ${moneyLabel(p.price)}</small>${activeTag(p.active)}</button><button type="button" class="catalog-more" data-product-menu="${p.id}" aria-label="Acciones">⋮</button><div class="catalog-card-actions"><button type="button" class="btn ghost" data-editp="${p.id}">Editar</button><button type="button" class="btn ghost" data-modelsp="${p.id}">Gestionar modelos</button><button type="button" class="catalog-more-action" data-togglep="${p.id}" data-active="${p.active!==false}">${p.active===false?"Activar":"Desactivar"}</button><button type="button" class="catalog-more-action danger" data-deletep="${p.id}">Eliminar</button></div></article>`}).join("")||`<div class="catalog-empty">Esta categoría no tiene productos todavía.</div>`}</div>`;
+  }else if(level===3){
+   const list=models.filter(m=>m.product_id===selectedProduct?.id&&(`${m.name||""}`).toLowerCase().includes(search.toLowerCase()));
+   html+=`<div class="catalog-count-row"><span>${list.length} modelo(s)</span><span class="catalog-count-note">${esc(selectedProduct?.sku||"")}</span></div>${toolbar("Buscar modelos...","+ Nuevo modelo")}<div class="catalog-list">${list.map(m=>{const im=Array.isArray(m.image_urls)?m.image_urls[0]:"";return `<article class="catalog-model-card">${imageBox(im,m.name)}<div class="catalog-product-main"><strong>${esc(m.name||"Modelo")}</strong><small>${esc(selectedProduct?.name||"Producto")}</small>${activeTag(m.active)}</div><button class="catalog-chevron-button" type="button" data-open-model="${m.id}" aria-label="Gestionar variantes">›</button><div class="catalog-card-actions"><button type="button" class="btn ghost" data-edit-models="${selectedProduct.id}">Editar modelo</button><button type="button" class="btn" data-open-model="${m.id}">Gestionar variantes</button></div></article>`}).join("")||`<div class="catalog-empty">Este producto no tiene modelos. Usa “Nuevo modelo” para agregar uno.</div>`}</div>`;
+  }else{
+   let variants=[];
+   const vr=await db.from("product_model_variants").select("id,model_id,size,color,stock,price,active").eq("model_id",selectedModel.id).order("size");
+   if(vr.error){html+=`<div class="catalog-empty catalog-error">No se pudieron cargar las variantes: ${esc(vr.error.message||"Error")}</div>`;w.innerHTML=html;bindCommon();return}
+   variants=vr.data||[];
+   const filtered=variants.filter(v=>`${v.size||""} ${v.color||""}`.toLowerCase().includes(variantSearch.toLowerCase()));
+   html+=`<div class="catalog-model-summary">${imageBox(Array.isArray(selectedModel.image_urls)?selectedModel.image_urls[0]:"",selectedModel.name)}<div><strong>${esc(selectedModel.name||"Modelo")}</strong><small>${esc(selectedProduct?.name||"Producto")} · SKU ${esc(selectedProduct?.sku||"—")}</small>${activeTag(selectedModel.active)}</div><button class="btn ghost" type="button" data-edit-models="${selectedProduct.id}">Editar</button></div><div class="catalog-tabs"><button type="button" class="active" data-model-tab="variants">Variantes</button><button type="button" data-model-tab="info">Información</button><button type="button" data-model-tab="images">Imágenes</button></div><section id="catalogVariantsPanel"><div class="catalog-count-row"><span>${variants.length} variante(s)</span><span class="catalog-count-note">${variants.reduce((n,v)=>n+(Number(v.stock)||0),0)} unidades</span></div><div class="catalog-toolbar"><label class="catalog-search"><span>⌕</span><input id="variantSearch" value="${esc(variantSearch)}" placeholder="Buscar variante..."></label><button class="catalog-filter" type="button" aria-label="Filtros">☷</button></div><form class="catalog-add-variant" id="catalogVariantForm"><strong>+ Nueva variante</strong><div class="catalog-variant-fields"><label>Color<input name="color" placeholder="Negro"></label><label>Talla<input name="size" required placeholder="S, M, 32..."></label><label>Stock inicial<input name="stock" type="number" min="0" step="1" value="0" required></label><label>Precio USD<input name="price" type="number" min="0" step=".01" placeholder="Opcional"></label></div><button class="btn" type="submit">Guardar variante</button><p class="catalog-feedback" id="catalogVariantMsg"></p></form><div class="catalog-variants-list">${filtered.map(v=>`<article class="catalog-variant-row">${imageBox(Array.isArray(selectedModel.image_urls)?selectedModel.image_urls[0]:"",selectedModel.name)}<div class="catalog-variant-copy"><strong>${esc(v.color||"Único")} · ${esc(v.size||"Sin talla")}</strong><small>Stock disponible: ${Number(v.stock)||0}</small><small>${moneyLabel(v.price)}</small></div><label class="catalog-stock-edit">Stock<input type="number" min="0" step="1" value="${Number(v.stock)||0}" data-stock="${v.id}"></label><button type="button" class="btn ghost catalog-save-stock" data-save-variant="${v.id}">Guardar</button></article>`).join("")||`<div class="catalog-empty">No hay variantes que coincidan con la búsqueda.</div>`}</div></section><section id="catalogInfoPanel" class="catalog-image-panel" hidden><h3>Información del modelo</h3><p><strong>Modelo:</strong> ${esc(selectedModel.name||"Modelo")}</p><p><strong>Producto:</strong> ${esc(selectedProduct?.name||"—")}</p><p><strong>Estado:</strong> ${selectedModel.active===false?"Inactivo":"Activo"}</p><p class="catalog-image-help">Puedes cambiar el nombre o el estado desde «Editar modelo». La imagen se administra en la pestaña Imágenes.</p></section><section id="catalogImagesPanel" class="catalog-image-panel" hidden><h3>Imagen del modelo</h3><p class="catalog-image-help">Puedes agregar una imagen aunque no la hayas subido al crear el modelo, o reemplazar la imagen actual. Esto no modifica las variantes ni el inventario.</p><div class="catalog-image-preview" id="catalogModelImagePreview">${(Array.isArray(selectedModel.image_urls)?selectedModel.image_urls[0]:"")?`<img src="${esc(selectedModel.image_urls[0])}" alt="${esc(selectedModel.name||"Imagen del modelo")}">`:`<div class="catalog-image-empty"><span>▧</span><strong>Este modelo todavía no tiene imagen</strong><small>Selecciona una imagen para agregarla.</small></div>`}</div><label class="catalog-image-file-label">Seleccionar imagen<input id="catalogModelImageFile" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"></label><p class="catalog-image-help">Formatos JPG, PNG o WebP · máximo 10 MB.</p><button type="button" class="btn" id="catalogSaveModelImage">${(Array.isArray(selectedModel.image_urls)?selectedModel.image_urls[0]:"")?"Cambiar imagen":"Guardar imagen"}</button><p class="catalog-feedback" id="catalogImageMsg" role="status"></p></section>`;
+  }
+  w.innerHTML=html;
+  bindCommon();
+  if(level===1){
+   w.querySelectorAll("[data-category]").forEach(b=>b.onclick=()=>{selectedCategory=categories.find(c=>c.id===b.dataset.category);level=2;search="";render()});
+   w.querySelector("[data-catalog-add]")?.addEventListener("click",async()=>{const name=prompt("Nombre de la categoría:");if(!name?.trim())return;const clean=name.trim(),slug=clean.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");const r=await db.from("categories").insert({name:clean,slug});if(r.error)showModuleError(r.error);else{await loadBase();search="";render()}});
+  }
+  if(level===2){
+   w.querySelector("[data-catalog-add]")?.addEventListener("click",()=>editProductForm(null));
+   w.querySelectorAll("[data-open-product]").forEach(b=>b.onclick=()=>{selectedProduct=products.find(p=>p.id===b.dataset.openProduct);level=3;search="";render()});
+   w.querySelectorAll("[data-editp]").forEach(b=>b.onclick=()=>editProductForm(products.find(p=>p.id===b.dataset.editp)));
+   w.querySelectorAll("[data-modelsp]").forEach(b=>b.onclick=()=>{const p=products.find(p=>p.id===b.dataset.modelsp);openStandaloneModels(p)});
+   w.querySelectorAll("[data-togglep]").forEach(b=>b.onclick=async()=>{try{const r=await db.from("products").update({active:b.dataset.active!=="true"}).eq("id",b.dataset.togglep);if(r.error)throw r.error;await loadBase();render()}catch(e){showModuleError(e)}});
+   w.querySelectorAll("[data-deletep]").forEach(b=>b.onclick=async()=>{const p=products.find(x=>x.id===b.dataset.deletep);if(!p||!confirm(`¿Eliminar el producto "${p.name}"? Primero se revisarán sus modelos y variantes.`))return;try{const mr=await db.from("product_models").select("id").eq("product_id",p.id);if(mr.error)throw mr.error;const ids=(mr.data||[]).map(x=>x.id);if(ids.length){const vr=await db.from("product_model_variants").delete().in("model_id",ids);if(vr.error)throw vr.error;const dr=await db.from("product_models").delete().in("id",ids);if(dr.error)throw dr.error}const del=await db.from("products").delete().eq("id",p.id);if(del.error)throw del.error;await loadBase();render()}catch(e){showModuleError(e)}});
+   w.querySelectorAll("[data-product-menu]").forEach(b=>b.onclick=()=>{const card=b.closest(".catalog-product-card");card?.classList.toggle("show-actions")});
+  }
+  if(level===3){
+   w.querySelector("[data-catalog-add]")?.addEventListener("click",()=>{openStandaloneModels(selectedProduct).then(()=>{document.getElementById("standaloneNewModel")?.click()})});
+   w.querySelectorAll("[data-open-model]").forEach(b=>b.onclick=()=>{selectedModel=models.find(m=>m.id===b.dataset.openModel);level=4;variantSearch="";modelTab="variants";render()});
+   w.querySelectorAll("[data-edit-models]").forEach(b=>b.onclick=()=>openStandaloneModels(selectedProduct));
+  }
+  if(level===4){
+   const modelPanels={variants:w.querySelector("#catalogVariantsPanel"),info:w.querySelector("#catalogInfoPanel"),images:w.querySelector("#catalogImagesPanel")};
+   const setModelTab=tab=>{modelTab=tab;w.querySelectorAll("[data-model-tab]").forEach(b=>b.classList.toggle("active",b.dataset.modelTab===tab));Object.entries(modelPanels).forEach(([key,panel])=>{if(panel)panel.hidden=key!==tab})};
+   setModelTab(modelTab);
+   w.querySelectorAll("[data-model-tab]").forEach(b=>b.onclick=()=>setModelTab(b.dataset.modelTab));
+   const imageInput=w.querySelector("#catalogModelImageFile"),imagePreview=w.querySelector("#catalogModelImagePreview"),imageSave=w.querySelector("#catalogSaveModelImage"),imageMsg=w.querySelector("#catalogImageMsg");
+   imageInput?.addEventListener("change",()=>{const file=imageInput.files?.[0];if(!file)return;if(!(["image/jpeg","image/png","image/webp"].includes(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name))||file.size>10*1024*1024){imageMsg.textContent="Usa una imagen JPG, PNG o WebP de máximo 10 MB.";imageInput.value="";return}const localUrl=URL.createObjectURL(file);imagePreview.innerHTML=`<img src="${localUrl}" alt="Vista previa de la nueva imagen">`;imageMsg.textContent="Vista previa lista. Pulsa Guardar imagen para aplicarla al modelo.";imageSave.textContent="Guardar imagen"});
+   imageSave?.addEventListener("click",async()=>{const file=imageInput?.files?.[0];if(!file){imageMsg.textContent="Selecciona primero una imagen.";imageInput?.focus();return}if(!(["image/jpeg","image/png","image/webp"].includes(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name))||file.size>10*1024*1024){imageMsg.textContent="Usa una imagen JPG, PNG o WebP de máximo 10 MB.";return}imageSave.disabled=true;imageMsg.textContent="Subiendo imagen…";try{const safe=file.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]/g,"-");const path=`models/${selectedProduct.id}/${selectedModel.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}-${safe}`;const up=await db.storage.from("product-images").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type||undefined});if(up.error)throw up.error;const pub=db.storage.from("product-images").getPublicUrl(up.data.path);const imageUrl=pub.data.publicUrl;const upd=await db.from("product_models").update({image_urls:[imageUrl],updated_at:new Date().toISOString()}).eq("id",selectedModel.id).eq("product_id",selectedProduct.id);if(upd.error)throw upd.error;selectedModel.image_urls=[imageUrl];models=models.map(m=>m.id===selectedModel.id?{...m,image_urls:[imageUrl]}:m);imagePreview.innerHTML=`<img src="${esc(imageUrl)}" alt="${esc(selectedModel.name||"Imagen del modelo")}">`;imageInput.value="";imageMsg.textContent="Imagen guardada correctamente. Ya está asociada a este modelo.";imageSave.textContent="Cambiar imagen";await loadBase();}catch(e){imageMsg.textContent="No se pudo guardar la imagen: "+(e.message||e)+". Verifica permisos del bucket product-images y las políticas de Storage.";showModuleError(e)}finally{imageSave.disabled=false}});
+   w.querySelector("#variantSearch")?.addEventListener("input",e=>{variantSearch=e.target.value;const pos=e.target.selectionStart;render().then(()=>{const el=w.querySelector("#variantSearch");if(el){el.focus();el.setSelectionRange(pos,pos)}})});
+   w.querySelector("#catalogVariantForm")?.addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget,d=Object.fromEntries(new FormData(f)),stock=Number(d.stock),price=d.price===""?null:Number(d.price),msg=w.querySelector("#catalogVariantMsg"),btn=f.querySelector("button[type=submit]");if(!d.size.trim()||!Number.isInteger(stock)||stock<0||(price!==null&&(!Number.isFinite(price)||price<0))){msg.textContent="Revisa talla, stock y precio.";return}btn.disabled=true;const r=await db.from("product_model_variants").insert({model_id:selectedModel.id,size:d.size.trim(),color:d.color.trim()||"Único",stock,price,active:true});btn.disabled=false;if(r.error){msg.textContent="No se pudo guardar: "+r.error.message;return}variantSearch="";await render()});
+   w.querySelectorAll("[data-save-variant]").forEach(b=>b.onclick=async()=>{const id=b.dataset.saveVariant,stock=Number(w.querySelector(`[data-stock="${id}"]`)?.value);if(!Number.isInteger(stock)||stock<0){showModuleError("El stock debe ser un entero igual o mayor que cero.");return}b.disabled=true;const r=await db.from("product_model_variants").update({stock}).eq("id",id);b.disabled=false;if(r.error){showModuleError(r.error);return}b.textContent="Guardado";b.classList.add("is-saved")});
+   w.querySelectorAll("[data-edit-models]").forEach(b=>b.onclick=()=>openStandaloneModels(selectedProduct));
+  }
+ }
+ try{await loadBase();render()}catch(e){w.innerHTML=`<div class="catalog-empty catalog-error">No se pudo cargar el catálogo: ${esc(e.message||e)}</div>`;showModuleError(e)}
 }
 async function editProductForm(p=null){
  const cr=await db.from("categories").select("id,name").order("name"); if(cr.error){showModuleError(cr.error);return}
@@ -1740,8 +1926,57 @@ async function moduleCashea(){
   }));
 
  }
- async function showDetail(id){const root=$('cxDashDetail');if(!root)return;root.innerHTML='<div class="cx-dash-detail">Cargando detalle de la orden…</div>';try{const [{data:o,error:oe},{data:items,error:ie},{data:sett,error:se}]=await Promise.all([db.from('cashea_operations').select('*').eq('id',id).single(),db.from('cashea_operation_items').select('*').eq('operation_id',id).order('created_at'),db.from('cashea_settlements').select('*').eq('operation_id',id).order('settlement_date',{ascending:false})]);if(oe)throw oe;if(ie)throw ie;if(se)throw se;const net=Math.max(0,Number(o.financed_amount||0)-Number(o.estimated_commission||0));root.innerHTML=`<section class="cx-dash-detail"><div class="cx-detail-head"><div><div class="cx-detail-ref"><h3>${esc(o.operation_reference||'Orden Cashea')}</h3><span class="cx-detail-status">${esc(statusLabel(o.status))}</span></div><p class="cx-detail-customer">${esc(o.customer_name||'Cliente sin nombre')} · ${esc(o.customer_phone||'Teléfono no registrado')} · ${esc(o.sale_date||'Fecha no registrada')}</p></div><button class="cx-detail-btn" type="button" data-cxd-close>Ocultar detalle</button></div><div class="cx-detail-section"><h4 class="cx-detail-section-title">Productos de la orden <small>${items.length} línea(s)</small></h4>${items.length?`<div class="cx-detail-tablewrap"><table class="cx-detail-table"><thead><tr><th>Producto</th><th>Modelo</th><th>Talla</th><th>Color</th><th>Cantidad</th><th>Precio unitario</th><th>Total</th><th>Acción</th></tr></thead><tbody>${items.map(i=>`<tr><td class="cx-detail-product">${esc(i.product_name||'Producto')}</td><td>${esc(i.model_name||'—')}</td><td>${esc(i.size||'—')}</td><td>${esc(i.color||'—')}</td><td>${esc(i.quantity)}</td><td>${esc(dashMoney(i.unit_price,o.currency))}</td><td>${esc(dashMoney(i.line_total??Number(i.quantity||0)*Number(i.unit_price||0),o.currency))}</td><td><button class="cx-detail-btn" type="button" data-cxd-exchange="${esc(i.id)}" data-cxd-product="${esc(i.product_name||'Producto')}">Cambiar prenda/talla</button></td></tr>`).join('')}</tbody></table></div><p class="cx-exchange-note" style="margin-top:9px">Al registrar un cambio se debe devolver al inventario la prenda recibida y descontar la nueva variante. La actualización debe ser atómica y conservar la trazabilidad de la orden.</p>`:'<div class="cx-detail-empty">No hay productos asociados a esta operación.</div>'}<div id="cxExchangeArea"></div></div><div class="cx-detail-section"><h4 class="cx-detail-section-title">Liquidaciones asociadas <small>${sett.length} registro(s)</small></h4>${sett.length?sett.map(x=>`<div class="cx-detail-settlement"><span>${esc(x.reference||'Depósito sin referencia')}</span><span>${esc(x.settlement_date||'Fecha no registrada')}</span><strong>${esc(dashMoney(x.amount_received,o.currency))}</strong></div>`).join(''):'<div class="cx-detail-empty">No hay liquidaciones individuales registradas para esta orden.</div>'}</div></section>`;root.querySelector('[data-cxd-close]')?.addEventListener('click',()=>{root.innerHTML=''});root.querySelectorAll('[data-cxd-exchange]').forEach(btn=>btn.addEventListener('click',()=>showExchangeForm(id,btn.dataset.cxdExchange,btn.dataset.cxdProduct)));}catch(e){root.innerHTML=`<div class="cx-dash-detail">No se pudo cargar el detalle: ${esc(e.message||e)}</div>`}}
- async function showExchangeForm(operationId,itemId,productName){const area=$('cxExchangeArea');if(!area)return;area.innerHTML='<div class="cx-detail-empty">Cargando modelos y tallas disponibles…</div>';try{const {data:products,error:pe}=await db.from('products').select('id,name,sku').order('name');if(pe)throw pe;const {data:models,error:me}=await db.from('product_models').select('id,product_id,name,image_urls').eq('active',true).order('name');if(me)throw me;const {data:variants,error:ve}=await db.from('product_model_variants').select('id,model_id,size,color,stock,price,active').eq('active',true).gt('stock',0);if(ve)throw ve;const available=(variants||[]).map(v=>{const m=(models||[]).find(x=>String(x.id)===String(v.model_id));const p=(products||[]).find(x=>String(x.id)===String(m?.product_id));return {...v,modelName:m?.name||'Modelo',productName:p?.name||'Producto',productId:p?.id}}).filter(v=>v.productId);area.innerHTML=`<div class="cx-exchange-form"><div style="grid-column:1/-1;font-size:14px;font-weight:800;color:#10264b">Cambio de prenda o talla · ${esc(productName)}</div><label>Producto nuevo<select id="cxExchangeVariant"><option value="">Selecciona una variante disponible</option>${available.map(v=>`<option value="${esc(v.id)}">${esc(v.productName)} · ${esc(v.modelName)} · Talla ${esc(v.size)} · ${esc(v.color||'Único')} · Stock ${esc(v.stock)}</option>`).join('')}</select></label><label>Motivo del cambio<input id="cxExchangeReason" maxlength="240" placeholder="Ej. Cambio de talla 34 por 36" /></label><p class="cx-exchange-note">Este formulario permite elegir una variante con stock disponible. El cambio no se ejecutará hasta contar con una operación transaccional que actualice el inventario y conserve el historial; no se modificarán existencias parcialmente desde el navegador.</p><div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="cx-detail-btn" type="button" id="cxExchangeCancel">Cancelar</button><button class="cx-detail-btn primary" type="button" id="cxExchangePrepare">Validar variante</button></div><div id="cxExchangeFeedback" class="cx-exchange-note" style="grid-column:1/-1"></div></div>`;$('cxExchangeCancel').onclick=()=>area.innerHTML='';$('cxExchangePrepare').onclick=()=>{const v=available.find(x=>String(x.id)===$('cxExchangeVariant').value);const reason=$('cxExchangeReason').value.trim();if(!v){$('cxExchangeFeedback').textContent='Selecciona una variante con stock disponible.';return}if(!reason){$('cxExchangeFeedback').textContent='Indica el motivo del cambio para conservar la trazabilidad.';return}$('cxExchangeFeedback').textContent=`Variante seleccionada: ${v.productName} · ${v.modelName} · talla ${v.size} · ${v.color||'Único'} (stock disponible: ${v.stock}). No se modificó inventario: falta implementar y desplegar la función transaccional de cambio antes de confirmar el movimiento.`}}catch(e){area.innerHTML=`<div class="cx-detail-empty">No se pudieron cargar las variantes: ${esc(e.message||e)}</div>`}}
+ async function showDetail(id){
+  const root=$('cxDashDetail');if(!root)return;
+  root.innerHTML='<div class="cx-dash-detail">Cargando detalle de la orden…</div>';
+  try{
+   const [{data:o,error:oe},{data:items,error:ie},{data:sett,error:se},{data:exchanges,error:xe}]=await Promise.all([
+    db.from('cashea_operations').select('*').eq('id',id).single(),
+    db.from('cashea_operation_items').select('*').eq('operation_id',id).order('created_at'),
+    db.from('cashea_settlements').select('*').eq('operation_id',id).order('settlement_date',{ascending:false}),
+    db.from('cashea_item_exchanges').select('*').eq('operation_id',id).order('created_at',{ascending:false})
+   ]);
+   if(oe)throw oe;if(ie)throw ie;if(se)throw se;if(xe)throw xe;
+   const net=Math.max(0,Number(o.financed_amount||0)-Number(o.estimated_commission||0));
+   const exchangeRows=(exchanges||[]).map(x=>`<article class="cx-exchange-history-card"><div class="cx-exchange-history-top"><strong>${esc(x.from_product_name||'Prenda anterior')} · ${esc(x.from_model_name||'Modelo')}</strong><span>${esc(x.created_at?new Date(x.created_at).toLocaleString('es-VE'):'Fecha no disponible')}</span></div><div class="cx-exchange-history-route"><span>${esc(x.from_size||'—')} · ${esc(x.from_color||'Único')}</span><icon>→</icon><strong>${esc(x.to_product_name||'Prenda nueva')} · ${esc(x.to_model_name||'Modelo')}</strong><span>${esc(x.to_size||'—')} · ${esc(x.to_color||'Único')}</span></div><div class="cx-exchange-history-meta">Cantidad: ${esc(x.quantity)} · Motivo: ${esc(x.reason||'Sin motivo')}</div></article>`).join('');
+   root.innerHTML=`<section class="cx-dash-detail"><div class="cx-detail-head"><div><div class="cx-detail-ref"><h3>${esc(o.operation_reference||'Orden Cashea')}</h3><span class="cx-detail-status">${esc(statusLabel(o.status))}</span></div><p class="cx-detail-customer">${esc(o.customer_name||'Cliente sin nombre')} · ${esc(o.customer_phone||'Teléfono no registrado')} · ${esc(o.sale_date||'Fecha no registrada')}</p></div><button class="cx-detail-btn" type="button" data-cxd-close>Ocultar detalle</button></div><div class="cx-detail-section"><h4 class="cx-detail-section-title">Productos de la orden <small>${items.length} línea(s)</small></h4>${items.length?`<div class="cx-detail-tablewrap"><table class="cx-detail-table"><thead><tr><th>Producto</th><th>Modelo</th><th>Talla</th><th>Color</th><th>Cantidad</th><th>Precio unitario</th><th>Total</th><th>Acción</th></tr></thead><tbody>${items.map(i=>`<tr><td class="cx-detail-product">${esc(i.product_name||'Producto')}</td><td>${esc(i.model_name||'—')}</td><td>${esc(i.size||'—')}</td><td>${esc(i.color||'—')}</td><td>${esc(i.quantity)}</td><td>${esc(dashMoney(i.unit_price,o.currency))}</td><td>${esc(dashMoney(i.line_total??Number(i.quantity||0)*Number(i.unit_price||0),o.currency))}</td><td><button class="cx-detail-btn" type="button" data-cxd-exchange="${esc(i.id)}" data-cxd-product="${esc(i.product_name||'Producto')}">Cambiar prenda/talla</button></td></tr>`).join('')}</tbody></table></div><div class="cx-detail-items-mobile">${items.map(i=>`<article class="cx-detail-item-card"><div class="cx-detail-item-top"><strong>${esc(i.product_name||'Producto')}</strong><span>${esc(dashMoney(i.line_total??Number(i.quantity||0)*Number(i.unit_price||0),o.currency))}</span></div><div class="cx-detail-item-model">${esc(i.model_name||'Modelo sin especificar')}</div><div class="cx-detail-item-specs"><span><small>Talla</small><b>${esc(i.size||'—')}</b></span><span><small>Color</small><b>${esc(i.color||'—')}</b></span><span><small>Cantidad</small><b>${esc(i.quantity)}</b></span><span><small>Precio unitario</small><b>${esc(dashMoney(i.unit_price,o.currency))}</b></span></div><button class="cx-detail-btn cx-detail-item-action" type="button" data-cxd-exchange="${esc(i.id)}" data-cxd-product="${esc(i.product_name||'Producto')}">Cambiar prenda o talla</button></article>`).join('')}</div><p class="cx-exchange-note" style="margin-top:9px">El cambio actualiza el inventario de forma atómica y conserva la orden original junto con el historial de movimientos.</p>`:'<div class="cx-detail-empty">No hay productos asociados a esta operación.</div>'}<div id="cxExchangeArea"></div></div><div class="cx-detail-section"><h4 class="cx-detail-section-title">Historial de cambios <small>${(exchanges||[]).length} movimiento(s)</small></h4>${exchangeRows||'<div class="cx-detail-empty">Todavía no se han registrado cambios de prendas o tallas.</div>'}</div><div class="cx-detail-section"><h4 class="cx-detail-section-title">Liquidaciones asociadas <small>${sett.length} registro(s)</small></h4>${sett.length?sett.map(x=>`<div class="cx-detail-settlement"><span>${esc(x.reference||'Depósito sin referencia')}</span><span>${esc(x.settlement_date||'Fecha no registrada')}</span><strong>${esc(dashMoney(x.amount_received,o.currency))}</strong></div>`).join(''):'<div class="cx-detail-empty">No hay liquidaciones individuales registradas para esta orden.</div>'}</div></section>`;
+   root.querySelector('[data-cxd-close]')?.addEventListener('click',()=>{root.innerHTML=''});
+   root.querySelectorAll('[data-cxd-exchange]').forEach(btn=>btn.addEventListener('click',()=>showExchangeForm(id,btn.dataset.cxdExchange,btn.dataset.cxdProduct)));
+  }catch(e){root.innerHTML=`<div class="cx-dash-detail">No se pudo cargar el detalle: ${esc(e.message||e)}</div>`}
+ }
+ async function showExchangeForm(operationId,itemId,productName){
+  const area=$('cxExchangeArea');if(!area)return;
+  area.innerHTML='<div class="cx-detail-empty">Cargando modelos y tallas disponibles…</div>';
+  try{
+   const [{data:products,error:pe},{data:models,error:me},{data:variants,error:ve},{data:item,error:ie},{data:history,error:he}]=await Promise.all([
+    db.from('products').select('id,name,sku').order('name'),
+    db.from('product_models').select('id,product_id,name,image_urls').eq('active',true).order('name'),
+    db.from('product_model_variants').select('id,model_id,size,color,stock,price,active').eq('active',true).gt('stock',0),
+    db.from('cashea_operation_items').select('id,operation_id,variant_id,quantity,product_name,model_name,size,color').eq('id',itemId).eq('operation_id',operationId).single(),
+    db.from('cashea_item_exchanges').select('to_variant_id').eq('operation_item_id',itemId).order('created_at',{ascending:false}).limit(1)
+   ]);
+   if(pe)throw pe;if(me)throw me;if(ve)throw ve;if(ie)throw ie;if(he)throw he;
+   const currentVariantId=history?.[0]?.to_variant_id||item.variant_id;
+   const available=(variants||[]).map(v=>{const m=(models||[]).find(x=>String(x.id)===String(v.model_id));const p=(products||[]).find(x=>String(x.id)===String(m?.product_id));return {...v,modelName:m?.name||'Modelo',productName:p?.name||'Producto',productId:p?.id}}).filter(v=>v.productId&&String(v.id)!==String(currentVariantId));
+   if(!available.length)throw new Error('No hay otras variantes activas con stock disponible para realizar el cambio.');
+   area.innerHTML=`<div class="cx-exchange-form"><div class="cx-exchange-form-title">Cambio de prenda o talla · ${esc(productName)}</div><div class="cx-exchange-form-subtitle">Se cambiarán ${esc(item.quantity)} unidad(es) de la orden. El inventario se actualizará al confirmar.</div><label>Producto nuevo<select id="cxExchangeVariant" required><option value="">Selecciona una variante disponible</option>${available.map(v=>`<option value="${esc(v.id)}">${esc(v.productName)} · ${esc(v.modelName)} · Talla ${esc(v.size)} · ${esc(v.color||'Único')} · Stock ${esc(v.stock)}</option>`).join('')}</select></label><label>Motivo del cambio<input id="cxExchangeReason" maxlength="240" placeholder="Ej. Cambio de modelo o talla" required /></label><p class="cx-exchange-note">Al confirmar, se devolverá al inventario la variante actual y se descontará la nueva. Ambas actualizaciones y el registro del historial se guardan en una sola transacción. La orden y su importe original no se modifican.</p><div class="cx-exchange-actions"><button class="cx-detail-btn" type="button" id="cxExchangeCancel">Cancelar</button><button class="cx-detail-btn primary" type="button" id="cxExchangeConfirm">Confirmar cambio</button></div><div id="cxExchangeFeedback" class="cx-exchange-feedback" role="status" aria-live="polite"></div></div>`;
+   $('cxExchangeCancel').onclick=()=>area.innerHTML='';
+   $('cxExchangeConfirm').onclick=async()=>{
+    const button=$('cxExchangeConfirm'),feedback=$('cxExchangeFeedback');
+    const selected=available.find(x=>String(x.id)===$('cxExchangeVariant').value),reason=$('cxExchangeReason').value.trim();
+    if(!selected){feedback.textContent='Selecciona la nueva prenda, modelo o talla.';return}
+    if(!reason){feedback.textContent='Escribe el motivo del cambio.';$('cxExchangeReason').focus();return}
+    if(!confirm(`¿Confirmar el cambio de ${item.quantity} unidad(es)?\n\nPrenda nueva: ${selected.productName} · ${selected.modelName} · talla ${selected.size} · ${selected.color||'Único'}\nStock actual: ${selected.stock}\nMotivo: ${reason}\n\nSe devolverá la variante actual y se descontará esta nueva variante.`))return;
+    button.disabled=true;button.textContent='Registrando cambio…';feedback.textContent='Actualizando inventario e historial de forma segura…';
+    try{
+     const {data,error}=await db.rpc('exchange_cashea_item',{p_operation_id:operationId,p_item_id:itemId,p_new_variant_id:selected.id,p_reason:reason});
+     if(error)throw error;
+     feedback.textContent=data?.message||'Cambio registrado correctamente.';
+     await showDetail(operationId);
+    }catch(err){button.disabled=false;button.textContent='Confirmar cambio';feedback.textContent='No se registró el cambio: '+(err?.message||String(err));}
+   };
+  }catch(e){area.innerHTML=`<div class="cx-detail-empty">No se pudieron cargar las variantes: ${esc(e.message||e)}</div>`}
+ }
 
  document.querySelectorAll('[data-cxd-tab]').forEach(b=>b.onclick=()=>{if(b.dataset.cxdTab==='fiscal'){renderFiscalReserves();return}tab=b.dataset.cxdTab;page=1;renderPane()});
  try{const [{data:os,error:oe},{data:bs,error:be}]=await Promise.all([db.from('cashea_operations').select('id,operation_reference,customer_name,customer_phone,sales_channel,sale_date,currency,sale_total,initial_amount,financed_amount,estimated_commission,estimated_net_amount,status,created_at').order('created_at',{ascending:false}).limit(1000),db.from('cashea_payment_batches').select('id,payment_date,amount_received,currency,reference,created_at').order('payment_date',{ascending:false}).limit(1000)]);if(oe)throw oe;if(be)throw be;orders=os||[];batches=bs||[];updateDashboardStats();$('cxDashFrom')?.addEventListener('change',onDateManualChange);$('cxDashTo')?.addEventListener('change',onDateManualChange);document.querySelectorAll('[data-cx-period]').forEach(b=>b.addEventListener('click',()=>applyQuickPeriod(b.dataset.cxPeriod)));document.querySelectorAll('[data-cx-clear]').forEach(b=>b.addEventListener('click',()=>{const el=$(b.dataset.cxClear);if(el){el.value='';onDateManualChange()}}));$('cxDashDateClear')?.addEventListener('click',()=>{$('cxDashFrom').value='';$('cxDashTo').value='';$('cxDashFrom').removeAttribute('max');$('cxDashTo').removeAttribute('min');setPeriodActive('custom');page=1;updateDashboardStats();renderPane()});renderPane()}catch(e){$('cxDashPane').innerHTML=`<div class="cx-dash-empty">No se pudieron cargar los datos de Cashea desde Supabase.<br><b>${esc(e.message||e)}</b><p style="margin-top:8px">No se muestran datos ficticios. Verifica la conexión y los permisos de administrador.</p></div>`}
@@ -1792,9 +2027,13 @@ function filterMods(){
 function kpi(cls,icon,label,id,link,go_){return `<article class="card k ${cls}"><span class="ic">${ico(icon)}</span><span class="lab">${label}</span><span class="val" id="${id}"><span class="sk" style="display:block"></span></span><span class="note" id="${id}N"></span><button class="lnk" data-go="${go_}">${link}</button></article>`}
 function renderHome(){
   const now=new Date();
-  $("view").innerHTML=`<h1>Hola, bienvenido</h1>
+  $("view").innerHTML=`<section class="home-welcome" aria-label="Bienvenida">
+  <div class="home-welcome-copy"><span class="home-eyebrow">PANEL DE ADMINISTRACIÓN</span>
+  <h1>Hola, <span>bienvenido</span></h1>
   <p class="lead">Aquí tienes el estado actual de tu negocio.</p>
-  <p class="date">${now.toLocaleDateString("es-VE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</p>
+  <p class="date">${now.toLocaleDateString("es-VE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</p></div>
+  <div class="home-growth" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  </section>
   <div id="homeErr"></div>
   <section class="kpis" aria-label="Indicadores">
    ${kpi("","ventas","Ventas regulares hoy","kSales","Ver ventas","ventas")}
@@ -2022,15 +2261,17 @@ section.cx-dash-datebar{
  max-width:18px!important;max-height:24px!important;padding:0!important;margin:0!important;border:0!important;
  background:transparent!important;color:#6680a8!important;font-size:18px!important;line-height:1!important;cursor:pointer!important;
 }
-.cx-dash-datebar .cx-period-clear{
+.cx-dash-datebar .cx-dash-dateclear{
  display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;
- height:42px!important;min-height:42px!important;padding:0 13px!important;white-space:nowrap!important;
+ width:auto!important;min-width:0!important;max-width:100%!important;height:42px!important;min-height:42px!important;max-height:42px!important;
+ padding:0 13px!important;margin:0!important;white-space:nowrap!important;overflow:hidden!important;
  border:1px solid #d5e2f8!important;border-radius:11px!important;background:#f7faff!important;
- color:#172d50!important;font:inherit!important;font-size:12px!important;font-weight:750!important;
+ color:#172d50!important;font:inherit!important;font-size:12px!important;font-weight:750!important;line-height:1!important;
+ box-shadow:none!important;align-self:end!important;flex:none!important;
 }
-.cx-dash-datebar .cx-period-clear svg{
+.cx-dash-datebar .cx-dash-dateclear svg{
  display:block!important;width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;
- max-width:16px!important;max-height:16px!important;position:static!important;transform:none!important;flex:none!important;
+ max-width:16px!important;max-height:16px!important;position:static!important;transform:none!important;flex:0 0 16px!important;
 }
 @media(max-width:1100px){
  section.cx-dash-datebar{grid-template-columns:minmax(0,1fr)!important;gap:18px!important}
@@ -2041,7 +2282,7 @@ section.cx-dash-datebar{
  .cx-dash-datebar .cx-period-right{grid-template-columns:minmax(0,1fr)!important}
  .cx-dash-datebar .cx-period-presets{flex-wrap:wrap!important}
  .cx-dash-datebar .cx-period-btn{flex:0 0 auto!important}
- .cx-dash-datebar .cx-period-clear{justify-self:start!important}
+ .cx-dash-datebar .cx-dash-dateclear{justify-self:start!important;align-self:start!important;width:max-content!important;max-width:100%!important;height:42px!important;min-height:42px!important;max-height:42px!important}
 }
 
 /* Cotizador de mercancía ENOC */
@@ -2049,6 +2290,118 @@ section.cx-dash-datebar{
 @media(max-width:950px){.quote-grid{grid-template-columns:1fr}.quote-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.quote-form-grid{grid-template-columns:1fr}.quote-wide{grid-column:auto}.quote-payments{grid-template-columns:1fr}.quote-stat-grid{grid-template-columns:1fr 1fr}.quote-stat strong{font-size:16px}.quote-card{padding:12px}}
 
+
+/* ENOC · refinamiento móvil del dashboard (sin tocar la lógica de negocio) */
+.home-welcome{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 16px;padding:22px 22px;border-radius:20px;color:#fff;background:linear-gradient(118deg,#071a3b 0%,#0b2b66 62%,#075dff 100%);box-shadow:0 10px 24px rgba(13,55,132,.14)}
+.home-welcome:before,.home-welcome:after{content:"";position:absolute;z-index:-1;pointer-events:none;border-radius:50%;border:1px solid rgba(110,166,255,.16);transform:rotate(-24deg)}
+.home-welcome:before{width:330px;height:210px;right:-75px;top:-115px;box-shadow:0 0 0 20px rgba(83,139,255,.035),0 0 0 42px rgba(83,139,255,.03)}
+.home-welcome:after{width:250px;height:160px;right:70px;bottom:-125px}
+.home-welcome-copy{min-width:0;position:relative;z-index:1}
+.home-eyebrow{display:block;font-size:10px;font-weight:750;letter-spacing:2px;color:#b8ceff;margin-bottom:7px}
+.home-welcome h1{font-size:clamp(23px,3vw,30px);line-height:1.12;letter-spacing:-.7px;color:#fff}
+.home-welcome h1 span{color:#4f8cff}
+.home-welcome .lead{font-size:13px;line-height:1.45;color:#e0eaff;margin-top:7px}
+.home-welcome .date{font-size:12px;line-height:1.4;color:#c7d8fa;margin-top:10px}
+.home-growth{height:78px;min-width:92px;display:flex;align-items:flex-end;justify-content:center;gap:7px;padding:8px 3px;position:relative}
+.home-growth:after{content:"";position:absolute;right:0;top:4px;width:65px;height:42px;border-top:2px solid #3988ff;transform:skewY(-28deg);opacity:.8}
+.home-growth i{display:block;width:14px;border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,#8cc4ff,#1764ff);box-shadow:0 3px 10px #0055ff35}
+.home-growth i:nth-child(1){height:19px}.home-growth i:nth-child(2){height:31px}.home-growth i:nth-child(3){height:47px}.home-growth i:nth-child(4){height:63px}
+.kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+.k.card{padding:15px;gap:5px;border:1px solid rgba(226,233,245,.85);box-shadow:0 4px 13px rgba(11,28,56,.045);min-width:0}
+.k .ic{width:36px;height:36px;border-radius:11px}
+.k .ic svg{width:19px;height:19px}
+.k .lab{font-size:12px;line-height:1.3;margin-top:2px}
+.k .val{font-size:clamp(20px,2vw,25px);line-height:1.15;overflow-wrap:anywhere}
+.k .note{font-size:11px;line-height:1.35;min-height:0}
+.k a,.k button.lnk{font-size:12px;min-height:24px;margin-top:1px}
+.cat{margin-top:14px;padding:17px 18px;border-radius:17px;gap:12px}
+.cat h2{font-size:17px}
+.cat .st{font-size:12px;margin-top:6px}
+.cat .btn{min-height:40px;padding:0 14px;font-size:12px;border-radius:11px}
+h3{font-size:16px;margin:22px 0 10px}
+.quick{gap:10px}
+.quick button{min-height:84px;padding:13px 6px;gap:7px;font-size:12px;border:1px solid rgba(226,233,245,.85);box-shadow:0 4px 13px rgba(11,28,56,.04)}
+.quick .ic{width:36px;height:36px;border-radius:11px}
+.quick svg{width:20px;height:20px}
+@media(max-width:860px){
+ .top{gap:9px;min-height:58px;padding-left:14px;padding-right:14px}
+ .top .m-brand{font-size:21px;letter-spacing:-.5px}
+ .top .sp{flex:1;min-width:0}
+ .top #enocPushBtn{font-size:0!important;min-width:38px;width:38px;height:38px;padding:0!important;display:grid;place-items:center;border-radius:11px;background:#edf3ff;color:#145dff}
+ .top #enocPushBtn:before{content:"🔔";font-size:18px}
+ .top-notification{width:30px;height:36px}
+ .top-profile{min-width:0;gap:0}
+ .top-profile-copy,.top-chevron{display:none}
+ .top-avatar{width:34px;height:34px}
+ .content{padding:14px 14px calc(94px + env(safe-area-inset-bottom,0px))}
+ .home-welcome{padding:18px;border-radius:17px;margin-bottom:13px}
+ .home-growth{min-width:72px;height:65px;gap:5px}
+ .home-growth i{width:11px}
+ .home-growth i:nth-child(1){height:16px}.home-growth i:nth-child(2){height:26px}.home-growth i:nth-child(3){height:38px}.home-growth i:nth-child(4){height:50px}
+ .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:13px}
+ .k.card{padding:12px;gap:4px;border-radius:16px}
+ .k .ic{width:32px;height:32px;border-radius:10px}
+ .k .ic svg{width:18px;height:18px}
+ .k .lab{font-size:11.5px;line-height:1.28}
+ .k .val{font-size:22px;letter-spacing:-.45px}
+ .k .note{font-size:10.5px;line-height:1.3}
+ .k a,.k button.lnk{font-size:11.5px;min-height:23px}
+ .cat{margin-top:12px;padding:14px;border-radius:15px;gap:10px;flex-wrap:nowrap}
+ .cat h2{font-size:16px}
+ .cat .st{font-size:11px;gap:6px}
+ .cat .btn{font-size:11px;min-height:38px;padding:0 11px;white-space:nowrap}
+ h3{margin:19px 0 9px;font-size:15px}
+ .quick{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+ .quick button{min-height:76px;padding:10px 4px;font-size:11px;gap:6px;border-radius:14px}
+ .quick .ic{width:32px;height:32px}
+ .quick svg{width:18px;height:18px}
+ .bnav{grid-template-columns:repeat(7,minmax(0,1fr));padding:5px 3px calc(5px + env(safe-area-inset-bottom,0px))}
+ .bnav button{font-size:10px;min-width:0;min-height:46px;gap:3px}
+ .bnav svg{width:20px;height:20px}
+}
+@media(max-width:390px){
+ .content{padding-left:11px;padding-right:11px}
+ .home-welcome{padding:15px}
+ .home-eyebrow{font-size:9px;letter-spacing:1.5px}
+ .home-welcome h1{font-size:23px}
+ .home-welcome .lead{font-size:12px}
+ .home-welcome .date{font-size:11px}
+ .home-growth{min-width:54px;gap:4px}
+ .home-growth i{width:9px}
+ .k.card{padding:10px;border-radius:14px}
+ .k .val{font-size:20px}
+ .cat{padding:12px}
+ .cat .btn{padding:0 8px;font-size:10px}
+ .bnav button{font-size:9px}
+}
+@media(min-width:861px){
+ .home-welcome{max-width:1200px}
+}
+
+
+/* ENOC · continuación móvil: detalle Cashea legible sin tabla comprimida */
+.cx-detail-items-mobile{display:none}
+@media(max-width:600px){
+ .cx-detail-tablewrap{display:none!important}
+ .cx-detail-items-mobile{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-top:10px}
+ .cx-detail-item-card{min-width:0;padding:13px;border:1px solid #e0e8f4;border-radius:13px;background:#fff;box-shadow:0 3px 10px rgba(16,38,78,.04)}
+ .cx-detail-item-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+ .cx-detail-item-top strong{min-width:0;font-size:13px;line-height:1.35;color:#10264b;overflow-wrap:anywhere}
+ .cx-detail-item-top>span{flex:none;font-size:14px;font-weight:850;color:#145dff;white-space:nowrap}
+ .cx-detail-item-model{margin-top:4px;color:#637590;font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+ .cx-detail-item-specs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0;padding:10px;background:#f6f8fc;border-radius:10px}
+ .cx-detail-item-specs span{display:flex;flex-direction:column;gap:3px;min-width:0}
+ .cx-detail-item-specs small{font-size:10px;color:#71809b}
+ .cx-detail-item-specs b{font-size:12px;color:#243b5d;overflow-wrap:anywhere}
+ .cx-detail-item-action{width:100%;min-height:42px;background:#fff;color:#145dff;border-color:#cbdaf3}
+ .cx-exchange-form{padding:13px;gap:11px;border-radius:13px}
+ .cx-exchange-form>div:first-child{font-size:14px!important;line-height:1.35}
+ .cx-exchange-form label{font-size:12px;line-height:1.35}
+ .cx-exchange-form select,.cx-exchange-form input{min-height:44px;padding:10px 12px;font-size:16px!important;font-weight:600}
+ .cx-exchange-form .cx-detail-btn{min-height:42px;padding:10px 14px}
+ .cx-exchange-note{font-size:12px;line-height:1.5}
+ .cx-detail-head .cx-detail-btn{width:100%}
+}
 </style>
 
 
