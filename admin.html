@@ -2031,7 +2031,7 @@ async function moduleCashea(){
   try{
    const [{data:o,error:oe},{data:items,error:ie},{data:sett,error:se},{data:exchanges,error:xe}]=await Promise.all([
     db.from('cashea_operations').select('*').eq('id',id).single(),
-    db.from('cashea_operation_items').select('*').eq('operation_id',id).order('created_at'),
+    casheaApiQuery('/api/admin/cashea/items?operation_id='+encodeURIComponent(id)),
     db.from('cashea_settlements').select('*').eq('operation_id',id).order('settlement_date',{ascending:false}),
     db.from('cashea_item_exchanges').select('*').eq('operation_id',id).order('created_at',{ascending:false})
    ]);
@@ -2051,7 +2051,7 @@ async function moduleCashea(){
     db.from('products').select('id,name,sku').order('name'),
     db.from('product_models').select('id,product_id,name,image_urls').eq('active',true).order('name'),
     db.from('product_model_variants').select('id,model_id,size,color,stock,price,active').eq('active',true).gt('stock',0),
-    db.from('cashea_operation_items').select('id,operation_id,variant_id,quantity,product_name,model_name,size,color').eq('id',itemId).eq('operation_id',operationId).single(),
+    casheaApiQuery('/api/admin/cashea/items?operation_id='+encodeURIComponent(operationId)).then(r=>({data:(r.data||[]).find(x=>String(x.id)===String(itemId))||null,error:null})),
     db.from('cashea_item_exchanges').select('to_variant_id').eq('operation_item_id',itemId).order('created_at',{ascending:false}).limit(1)
    ]);
    if(pe)throw pe;if(me)throw me;if(ve)throw ve;if(ie)throw ie;if(he)throw he;
