@@ -1962,7 +1962,7 @@ async function moduleCashea(){
         if(!data||data.ok!==true)throw new Error(data?.message||'No se pudo revertir el pago.');
         const [{data:os,error:oe},{data:bs,error:be}]=await Promise.all([
           casheaApiQuery('/api/admin/cashea/operations'),
-          casheaApiQuery('/api/admin/cashea/payments').then(data=>({data:data?.batches||[],error:null}))
+          casheaApi('/api/admin/cashea/payments').then(data=>({data:data?.batches||[],error:null}))
         ]);
         if(oe)throw oe;if(be)throw be;
         orders=os||[];batches=bs||[];updateDashboardStats();renderPane();
@@ -2015,7 +2015,7 @@ async function moduleCashea(){
       if(rpcData&&rpcData.ok===false)throw new Error(rpcData.message||'No se pudo registrar el depósito.');
       const [{data:os,error:oe},{data:bs,error:be}]=await Promise.all([
         casheaApiQuery('/api/admin/cashea/operations'),
-        casheaApiQuery('/api/admin/cashea/payments').then(data=>({data:data?.batches||[],error:null}))
+        casheaApi('/api/admin/cashea/payments').then(data=>({data:data?.batches||[],error:null}))
       ]);
       if(oe)throw oe;if(be)throw be;
       orders=os||[];batches=bs||[];
@@ -2081,7 +2081,7 @@ async function moduleCashea(){
  }
 
  document.querySelectorAll('[data-cxd-tab]').forEach(b=>b.onclick=()=>{if(b.dataset.cxdTab==='fiscal'){renderFiscalReserves();return}tab=b.dataset.cxdTab;page=1;renderPane()});
- try{const [{data:os,error:oe},{data:bs,error:be}]=await Promise.all([casheaApiQuery('/api/admin/cashea/operations'),casheaApiQuery('/api/admin/cashea/payments').then(data=>({data:data?.batches||[],error:null}))]);if(oe)throw oe;if(be)throw be;orders=os||[];batches=bs||[];updateDashboardStats();$('cxDashFrom')?.addEventListener('change',onDateManualChange);$('cxDashTo')?.addEventListener('change',onDateManualChange);document.querySelectorAll('[data-cx-period]').forEach(b=>b.addEventListener('click',()=>applyQuickPeriod(b.dataset.cxPeriod)));document.querySelectorAll('[data-cx-clear]').forEach(b=>b.addEventListener('click',()=>{const el=$(b.dataset.cxClear);if(el){el.value='';onDateManualChange()}}));$('cxDashDateClear')?.addEventListener('click',()=>{$('cxDashFrom').value='';$('cxDashTo').value='';$('cxDashFrom').removeAttribute('max');$('cxDashTo').removeAttribute('min');setPeriodActive('custom');page=1;updateDashboardStats();renderPane()});renderPane()}catch(e){$('cxDashPane').innerHTML=`<div class="cx-dash-empty">No se pudieron cargar los datos de Cashea desde Supabase.<br><b>${esc(e.message||e)}</b><p style="margin-top:8px">No se muestran datos ficticios. Verifica la conexión y los permisos de administrador.</p></div>`}
+ try{const [{data:os,error:oe},{data:bs,error:be}]=await Promise.all([casheaApiQuery('/api/admin/cashea/operations'),casheaApi('/api/admin/cashea/payments').then(data=>({data:data?.batches||[],error:null}))]);if(oe)throw oe;if(be)throw be;orders=os||[];batches=bs||[];updateDashboardStats();$('cxDashFrom')?.addEventListener('change',onDateManualChange);$('cxDashTo')?.addEventListener('change',onDateManualChange);document.querySelectorAll('[data-cx-period]').forEach(b=>b.addEventListener('click',()=>applyQuickPeriod(b.dataset.cxPeriod)));document.querySelectorAll('[data-cx-clear]').forEach(b=>b.addEventListener('click',()=>{const el=$(b.dataset.cxClear);if(el){el.value='';onDateManualChange()}}));$('cxDashDateClear')?.addEventListener('click',()=>{$('cxDashFrom').value='';$('cxDashTo').value='';$('cxDashFrom').removeAttribute('max');$('cxDashTo').removeAttribute('min');setPeriodActive('custom');page=1;updateDashboardStats();renderPane()});renderPane()}catch(e){$('cxDashPane').innerHTML=`<div class="cx-dash-empty">No se pudieron cargar los datos de Cashea desde Supabase.<br><b>${esc(e.message||e)}</b><p style="margin-top:8px">No se muestran datos ficticios. Verifica la conexión y los permisos de administrador.</p></div>`}
 }
 
 async function moduleSettings(){
