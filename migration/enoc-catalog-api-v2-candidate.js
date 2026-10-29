@@ -395,6 +395,9 @@ async function verify(req,env){
   if(!r.ok)return null;
   const user=await r.json();
   if(!user?.id||!user?.email)return null;
+  const allowed=(env.ADMIN_ALLOWED_EMAILS||"").split(",").map(x=>x.trim().toLowerCase()).filter(Boolean);
+  const role=user.app_metadata?.role||user.user_metadata?.role;
+  if(role!=="admin"&&!allowed.includes(String(user.email).toLowerCase()))return null;
   return {sub:user.id,role:"admin",email:user.email,auth_source:"supabase"};
  }catch{return null;}
 }
