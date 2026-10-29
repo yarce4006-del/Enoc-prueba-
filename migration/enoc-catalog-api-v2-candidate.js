@@ -70,6 +70,12 @@ export default {
         const q=id?env.DB.prepare("SELECT id,product_id,name,image_urls,active FROM product_models WHERE active=1 AND product_id=? ORDER BY name").bind(id):env.DB.prepare("SELECT id,product_id,name,image_urls,active FROM product_models WHERE active=1 ORDER BY name");
         return out({data:(await q.all()).results},200,headers);
       }
+      if (url.pathname === "/api/legacy-variants") {
+        const pid=url.searchParams.get("product_id");
+        if(!pid)return out({error:"product_id is required"},400,headers);
+        const r=await env.DB.prepare("SELECT id,product_id,sku,size,color,stock,price,active,created_at,updated_at FROM product_variants WHERE active=1 AND product_id=? ORDER BY size,color").bind(pid).all();
+        return out({data:r.results},200,headers);
+      }
       if (url.pathname === "/api/variants") {
         const mid=url.searchParams.get("model_id"), pid=url.searchParams.get("product_id");
         if (!mid&&!pid) return out({error:"model_id or product_id is required"},400,headers);
