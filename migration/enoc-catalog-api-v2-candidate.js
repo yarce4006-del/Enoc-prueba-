@@ -251,7 +251,7 @@ async function admin(request,url,env,headers) {
   }
   if(m==="POST"&&p==="/api/admin/cashea/fiscal/reserve"){
     const b=await body(request),rate=Number(b.bcv_rate),rateDate=String(b.rate_date||"");
-    if(!b.operation_id||!Number.isFinite(rate)||rate<=0||!/^\\d{4}-\\d{2}-\\d{2}$/.test(rateDate))return out({error:"operation_id, positive BCV rate and YYYY-MM-DD rate_date are required"},400,headers);
+    if(!b.operation_id||!Number.isFinite(rate)||rate<=0||!/^\d{4}-\\d{2}-\\d{2}$/.test(rateDate))return out({error:"operation_id, positive BCV rate and YYYY-MM-DD rate_date are required"},400,headers);
     const op=await env.DB.prepare("SELECT id,operation_reference,customer_name,sale_date,sale_total,currency FROM cashea_operations WHERE id=?").bind(String(b.operation_id)).first();
     if(!op)return out({error:"Cashea operation not found"},404,headers);
     if(op.currency&&op.currency!=="USD")return out({error:"Fiscal reserve calculation currently requires USD operations"},409,headers);
@@ -265,7 +265,7 @@ async function admin(request,url,env,headers) {
   }
   if(m==="POST"&&p==="/api/admin/cashea/fiscal/declarations"){
     const b=await body(request),start=String(b.period_start||""),end=String(b.period_end||"");
-    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(start)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(end)||start>end)return out({error:"Valid period_start and period_end are required"},400,headers);
+    if(!/^\d{4}-\\d{2}-\\d{2}$/.test(start)||!/^\d{4}-\\d{2}-\\d{2}$/.test(end)||start>end)return out({error:"Valid period_start and period_end are required"},400,headers);
     const ids=Array.isArray(b.reserve_ids)?[...new Set(b.reserve_ids.map(String))]:[];
     if(!ids.length)return out({error:"reserve_ids must contain at least one fiscal reserve"},400,headers);
     const rows=(await env.DB.prepare("SELECT * FROM cashea_fiscal_reserves WHERE status='registered' AND declaration_id IS NULL AND sale_date>=? AND sale_date<=? ORDER BY sale_date").bind(start,end).all()).results;
