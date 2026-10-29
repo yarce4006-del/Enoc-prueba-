@@ -347,7 +347,8 @@ async function admin(request,url,env,headers) {
   }
   return out({error:"Admin route not found"},404,headers);
 }
-function round2(n){return Math.round((Number(n)+Number.EPSILON)*100)/100;}\nasync function body(req){const n=Number(req.headers.get("Content-Length")||0);if(n>1000000)throw Error("Too large");return req.json();}
+function round2(n){return Math.round((Number(n)+Number.EPSILON)*100)/100;}
+async function body(req){const n=Number(req.headers.get("Content-Length")||0);if(n>1000000)throw Error("Too large");return req.json();}
 function out(data,status,headers){return new Response(JSON.stringify(data),{status,headers});}
 function equal(a,b){const x=enc.encode(a),y=enc.encode(b);if(x.length!==y.length)return false;let d=0;for(let i=0;i<x.length;i++)d|=x[i]^y[i];return d===0;}
 function b64u(bytes){let s="";for(const b of bytes)s+=String.fromCharCode(b);return btoa(s).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");}
