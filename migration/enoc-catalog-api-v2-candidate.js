@@ -237,6 +237,32 @@ async function admin(request,url,env,headers) {
     if(!r.meta?.changes)return out({error:"Product not found"},404,headers);
     return out({data:{id,active:0}},200,headers);
   }
+  if(m==="POST"&&p==="/api/admin/cashea/operations"){
+    const b=await body(request),total=Number(b.sale_total),initial=Number(b.initial_amount||0);
+    const date=String(b.sale_date||"");
+    if(!String(b.customer_name||"").trim()||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(total)||total<=0||!Number.isFinite(initial)||initial<0||initial>total)return out({error:"Customer, valid sale date and valid amounts are required"},400,headers);
+    const id=crypto.randomUUID(),ref=String(b.operation_reference||"").trim()||null;
+    await env.DB.prepare("INSERT INTO cashea_operations (id,operation_reference,customer_name,customer_phone,sales_channel,sale_date,currency,sale_total,initial_amount,financed_amount,commission_sale_pct,commission_financed_pct,estimated_commission,estimated_net_amount,status,notes,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'draft',?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)")
+      .bind(id,ref,String(b.customer_name).trim(),b.customer_phone||null,b.sales_channel||"physical",date,b.currency||"USD",total.toFixed(2),initial.toFixed(2),round2(total-initial).toFixed(2),Number(b.commission_sale_pct||0).toString(),Number(b.commission_financed_pct||0).toString(),"0.00","0.00",b.notes||null,"admin").run();
+    return out({data:{id,status:"draft"}},201,headers);
+  }
+  if(m==="POST"&&p==="/api/admin/cashea/items"){
+    const b=await body(request),opId=String(b.operation_id||""),items=Array.isArray(b.items)?b.items:[];
+    if(!opId||!items.length||items.length>100)return out({error:"operation_id and 1–100 items are required"},400,headers);
+    const op=await env.DB.prepare("SELECT id,status FROM cashea_operations WHERE id=?").bind(opId).first();
+    if(!op||op.status!=="draft")return out({error:"Items can only be added to a draft operation"},409,headers);
+    const stmts=[];
+    for(const it of items){
+      const qty=Number(it.quantity),price=Number(it.unit_price);
+      if(!it.variant_id||!Number.isInteger(qty)||qty<1||!Number.isFinite(price)||price<0)return out({error:"Invalid item variant, quantity or price"},400,headers);
+      const variant=await env.DB.prepare("SELECT v.id,v.stock,v.active,m.product_id,m.name AS model_name,m.active AS model_active,p.name AS product_name,p.sku,p.active AS product_active FROM product_model_variants v JOIN product_models m ON m.id=v.model_id JOIN products p ON p.id=m.product_id WHERE v.id=?").bind(String(it.variant_id)).first();
+      if(!variant||!variant.active||!variant.model_active||!variant.product_active)return out({error:"An item variant is unavailable"},409,headers);
+      stmts.push(env.DB.prepare("INSERT INTO cashea_operation_items (id,operation_id,product_id,variant_id,product_name,sku,model_name,size,color,quantity,unit_price,line_total,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)")
+       .bind(crypto.randomUUID(),opId,variant.product_id,String(it.variant_id),variant.product_name,variant.sku||null,variant.model_name, it.size??null,it.color??null,qty,price.toFixed(2),(price*qty).toFixed(2)));
+    }
+    await env.DB.batch(stmts);
+    return out({data:{operation_id:opId,item_count:items.length}},201,headers);
+  }
   if(m==="GET"&&p==="/api/admin/cashea/operations"){
     const r=await env.DB.prepare("SELECT * FROM cashea_operations ORDER BY created_at DESC LIMIT 1000").all();
     return out({data:r.results},200,headers);
