@@ -1963,12 +1963,12 @@ async function loadProductsFromSupabase(){
    ]);
    let models=[],modelVars=[];
    try{
-     models=await apiGet("/api/models")||[];
-     for(const m of models){
+     [models,modelVars]=await Promise.all([apiGet("/api/models"),apiGet("/api/variants")]);
+     models=models||[];modelVars=modelVars||[];
+     models.forEach(m=>{
        try{m.image_urls=Array.isArray(m.image_urls)?m.image_urls:(typeof m.image_urls==="string"?JSON.parse(m.image_urls||"[]"):[])}catch(_){m.image_urls=[]}
-       m.variants=await apiGet("/api/variants?model_id="+encodeURIComponent(m.id))||[];
-     }
-     modelVars=models.flatMap(m=>m.variants||[]);
+       m.variants=modelVars.filter(v=>String(v.model_id)===String(m.id));
+     });
    }catch(modelError){console.warn("ENOC / Cloudflare models optional data unavailable",modelError);models=[];modelVars=[]}
    (rows||[]).forEach(p=>{
      try{p.image_urls=Array.isArray(p.image_urls)?p.image_urls:(typeof p.image_urls==="string"?JSON.parse(p.image_urls||"[]"):[])}catch(_){p.image_urls=[]}
