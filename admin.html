@@ -1745,13 +1745,16 @@ async function submitSaleLocal(){
  const items=saleCart.map(x=>({variant_id:x.variant_id,product_id:x.product_id,product_name:x.product_name,sku:saleProducts.find(p=>String(p.id)===String(x.product_id))?.sku||null,model_name:x.model_name,size:x.size,color:x.color,quantity:x.qty,unit_price:Number(x.price)}));
  if(isCashea){
   const d={customer_name:customerName,customer_phone:customerPhone||null,sale_date:new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10),currency:"USD",operation_reference:$("saleCasheaOrder").value.trim(),notes:"Venta registrada desde Ventas unificadas",sales_channel:$("saleChannel").value==="store"?"physical":"web",sale_total:Number(total.toFixed(2)),initial_amount:Number(initial.toFixed(2)),commission_sale_pct:salePct,commission_financed_pct:financedPct};
-  const {data:created,error:insertErr}=await db.from("cashea_operations").insert(d).select("id").single();
-  if(insertErr){showModuleError("No se pudo crear la operación Cashea: "+insertErr.message);return}
+  let created;
+  try{
+   created=await casheaApi('/api/admin/cashea/operations',{method:'POST',body:d});
+   const id=created.id;
+   await casheaApi('/api/admin/cashea/items',{method:'POST',body:{operation_id:id,items:items.map(item=>({variant_id:item.variant_id,quantity:item.quantity,unit_price:item.unit_price,size:item.size,color:item.color}))}});
+   const confirmed=await casheaApi('/api/admin/cashea/confirm',{method:'POST',body:{operation_id:id}});
+   if(!confirmed||confirmed.status!=="confirmed")throw new Error("La API no confirmó la operación.");
+   created={id,...confirmed};
+  }catch(apiErr){showModuleError("No se completó la venta Cashea mediante Cloudflare API: "+(apiErr.message||apiErr)+". No se debe repetir hasta revisar si quedó un borrador.");return}
   const id=created.id;
-  const itemInsert=await db.from("cashea_operation_items").insert(items.map(item=>({operation_id:id,...item})));
-  if(itemInsert.error){showModuleError("Se creó un borrador Cashea, pero no se guardaron sus productos. No se confirmó ni se descontó stock. Detalle: "+itemInsert.error.message);return}
-  const confirmed=await db.rpc("confirm_cashea_operation",{p_operation_id:id});
-  if(confirmed.error){showModuleError("El borrador Cashea se guardó, pero no se confirmó ni se descontó inventario. Abre Cashea para revisar el borrador. Detalle: "+confirmed.error.message);return}
   saleCart=[];$("saleInitial").value="0";$("saleCasheaOrder").value="";$("saleName").value="";$("salePhone").value="";$("saleReference").value="";$("saleCustomerSearch").value="";$("saleCustomerId").value="";renderSaleCartLocal();
   const msg=`Venta Cashea ${id} confirmada. Inicial: ${money(initial)} · Financiado: ${money(financed)} · Neto estimado de Cashea: ${money(net)}.`;$("moduleMsg").textContent=msg;if($("saleSubmitFeedback"))$("saleSubmitFeedback").textContent="✓ "+msg;return;
  }
