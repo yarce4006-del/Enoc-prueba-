@@ -847,8 +847,7 @@ body.cx-product-modal-open{overflow:hidden}
  .form-grid,.grid-2,.grid-3{grid-template-columns:minmax(0,1fr)!important}
  .form-row,.field{min-width:0!important}
  .content *{scroll-margin-top:72px}
-}
-@media(max-width:420px){
+}@media(max-width:420px){
  .content{padding-left:10px!important;padding-right:10px!important}
  .kpis{gap:7px!important}
  .kpis>*{padding:10px!important}
@@ -943,6 +942,28 @@ const SOLD_STATUSES=["Confirmado","Pagado","Entregado","Completado","Enviado"];
 const PENDING_STATUSES=["Espera de verificación","Pendiente"];
 
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+
+/* ---------- ENOC R2 image upload integration (candidate; configure endpoint after Worker deployment) ---------- */
+const ENOC_R2_UPLOAD_ENDPOINT = "https://enoc-r2-upload.enoc365-image-migration.workers.dev";
+async function uploadImageToR2(path, file) {
+  if (!ENOC_R2_UPLOAD_ENDPOINT || ENOC_R2_UPLOAD_ENDPOINT.includes("REPLACE-WITH")) {
+    throw new Error("Falta configurar ENOC_R2_UPLOAD_ENDPOINT con la URL del Worker de Cloudflare.");
+  }
+  const { data: { session } } = await db.auth.getSession();
+  if (!session?.access_token) throw new Error("Tu sesión ha caducado. Inicia sesión de nuevo.");
+  const form = new FormData();
+  form.append("path", path);
+  form.append("file", file, file.name || "image.webp");
+  const response = await fetch(ENOC_R2_UPLOAD_ENDPOINT, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: form
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.publicUrl) throw new Error(result.error || `Falló la subida a R2 (${response.status}).`);
+  return result.publicUrl;
+}
+
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const money=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(n)||0);
@@ -1200,9 +1221,10 @@ async function moduleProducts(){
   let html=top(title,subtitle,level>1);
   if(level===1){
    const visible=categories.filter(c=>c.name.toLowerCase().includes(search.toLowerCase()));
-   html+=`<div class="catalog-summary"><span>${categories.length} categoría(s)</span><button class="btn catalog-add" data-catalog-add type="button">+ Nueva categoría</button></div><label class="catalog-search catalog-search-full"><span>⌕</span><input id="catalogSearch" value="${esc(search)}" placeholder="Buscar categorías..." autocomplete="off"></label><div class="catalog-list">${visible.map(c=>{const cp=products.filter(p=>p.category_id===c.id),cm=models.filter(m=>cp.some(p=>p.id===m.product_id)),first=cp.map(imgOf).find(Boolean);return `<button type="button" class="catalog-category-card" data-category="${c.id}">${imageBox(first,c.name)}<span class="catalog-card-copy"><strong>${esc(c.name)}</strong><small>${cp.length} producto(s) · ${cm.length} modelo(s)</small></span><span class="catalog-chevron">›</span></button>`}).join("")||`<div class="catalog-empty">No se encontraron categorías.</div>`}</div>`;
+   const uncategorized=products.filter(p=>p.category_id===null||p.category_id===undefined||p.category_id==="");
+   html+=`<div class="catalog-summary"><span>${categories.length} categoría(s) · ${uncategorized.length} sin categoría</span><button class="btn catalog-add" data-catalog-add type="button">+ Nueva categoría</button></div><label class="catalog-search catalog-search-full"><span>⌕</span><input id="catalogSearch" value="${esc(search)}" placeholder="Buscar categorías..." autocomplete="off"></label><div class="catalog-list">${visible.map(c=>{const cp=products.filter(p=>p.category_id===c.id),cm=models.filter(m=>cp.some(p=>p.id===m.product_id)),first=cp.map(imgOf).find(Boolean);return `<button type="button" class="catalog-category-card" data-category="${c.id}">${imageBox(first,c.name)}<span class="catalog-card-copy"><strong>${esc(c.name)}</strong><small>${cp.length} producto(s) · ${cm.length} modelo(s)</small></span><span class="catalog-chevron">›</span></button>`}).join("")||`<div class="catalog-empty">No se encontraron categorías.</div>`}${uncategorized.length?`<button type="button" class="catalog-category-card" data-uncategorized>${imageBox(uncategorized.map(imgOf).find(Boolean),"Sin categoría")}<span class="catalog-card-copy"><strong>Sin categoría</strong><small>${uncategorized.length} producto(s) sin categoría</small></span><span class="catalog-chevron">›</span></button>`:""}</div>`;
   }else if(level===2){
-   const list=products.filter(p=>p.category_id===selectedCategory?.id&&(`${p.name} ${p.sku||""}`).toLowerCase().includes(search.toLowerCase()));
+   const isUncategorized=selectedCategory?.id===null;const list=products.filter(p=>(isUncategorized?(p.category_id===null||p.category_id===undefined||p.category_id===""):p.category_id===selectedCategory?.id)&&(`${p.name} ${p.sku||""}`).toLowerCase().includes(search.toLowerCase()));
    html+=`<div class="catalog-count-row"><span>${list.length} producto(s)</span><span class="catalog-count-note">En ${esc(selectedCategory?.name||"categoría")}</span></div>${toolbar("Buscar productos...","+ Nuevo producto")}<div class="catalog-list">${list.map(p=>{const pc=models.filter(m=>m.product_id===p.id);return `<article class="catalog-product-card">${imageBox(imgOf(p),p.name)}<button type="button" class="catalog-product-main" data-open-product="${p.id}"><strong>${esc(p.name)}</strong><small>SKU: ${esc(p.sku||"—")}</small><small>${pc.length} modelo(s) · ${moneyLabel(p.price)}</small>${activeTag(p.active)}</button><button type="button" class="catalog-more" data-product-menu="${p.id}" aria-label="Acciones">⋮</button><div class="catalog-card-actions"><button type="button" class="btn ghost" data-editp="${p.id}">Editar</button><button type="button" class="btn ghost" data-modelsp="${p.id}">Gestionar modelos</button><button type="button" class="catalog-more-action" data-togglep="${p.id}" data-active="${p.active!==false}">${p.active===false?"Activar":"Desactivar"}</button><button type="button" class="catalog-more-action danger" data-deletep="${p.id}">Eliminar</button></div></article>`}).join("")||`<div class="catalog-empty">Esta categoría no tiene productos todavía.</div>`}</div>`;
   }else if(level===3){
    const list=models.filter(m=>m.product_id===selectedProduct?.id&&(`${m.name||""}`).toLowerCase().includes(search.toLowerCase()));
@@ -1219,6 +1241,7 @@ async function moduleProducts(){
   bindCommon();
   if(level===1){
    w.querySelectorAll("[data-category]").forEach(b=>b.onclick=()=>{selectedCategory=categories.find(c=>c.id===b.dataset.category);level=2;search="";render()});
+  w.querySelector("[data-uncategorized]")?.addEventListener("click",()=>{selectedCategory={id:null,name:"Sin categoría"};level=2;search="";render()});
    w.querySelector("[data-catalog-add]")?.addEventListener("click",async()=>{const name=prompt("Nombre de la categoría:");if(!name?.trim())return;const clean=name.trim(),slug=clean.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");const r=await db.from("categories").insert({name:clean,slug});if(r.error)showModuleError(r.error);else{await loadBase();search="";render()}});
   }
   if(level===2){
@@ -1242,7 +1265,7 @@ async function moduleProducts(){
    w.querySelectorAll("[data-model-tab]").forEach(b=>b.onclick=()=>setModelTab(b.dataset.modelTab));
    const imageInput=w.querySelector("#catalogModelImageFile"),imagePreview=w.querySelector("#catalogModelImagePreview"),imageSave=w.querySelector("#catalogSaveModelImage"),imageMsg=w.querySelector("#catalogImageMsg");
    imageInput?.addEventListener("change",()=>{const file=imageInput.files?.[0];if(!file)return;if(!(["image/jpeg","image/png","image/webp"].includes(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name))||file.size>10*1024*1024){imageMsg.textContent="Usa una imagen JPG, PNG o WebP de máximo 10 MB.";imageInput.value="";return}const localUrl=URL.createObjectURL(file);imagePreview.innerHTML=`<img src="${localUrl}" alt="Vista previa de la nueva imagen">`;imageMsg.textContent="Vista previa lista. Pulsa Guardar imagen para aplicarla al modelo.";imageSave.textContent="Guardar imagen"});
-   imageSave?.addEventListener("click",async()=>{const file=imageInput?.files?.[0];if(!file){imageMsg.textContent="Selecciona primero una imagen.";imageInput?.focus();return}if(!(["image/jpeg","image/png","image/webp"].includes(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name))||file.size>10*1024*1024){imageMsg.textContent="Usa una imagen JPG, PNG o WebP de máximo 10 MB.";return}imageSave.disabled=true;imageMsg.textContent="Subiendo imagen…";try{const safe=file.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]/g,"-");const path=`models/${selectedProduct.id}/${selectedModel.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}-${safe}`;const up=await db.storage.from("product-images").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type||undefined});if(up.error)throw up.error;const pub=db.storage.from("product-images").getPublicUrl(up.data.path);const imageUrl=pub.data.publicUrl;const upd=await db.from("product_models").update({image_urls:[imageUrl],updated_at:new Date().toISOString()}).eq("id",selectedModel.id).eq("product_id",selectedProduct.id);if(upd.error)throw upd.error;selectedModel.image_urls=[imageUrl];models=models.map(m=>m.id===selectedModel.id?{...m,image_urls:[imageUrl]}:m);imagePreview.innerHTML=`<img src="${esc(imageUrl)}" alt="${esc(selectedModel.name||"Imagen del modelo")}">`;imageInput.value="";imageMsg.textContent="Imagen guardada correctamente. Ya está asociada a este modelo.";imageSave.textContent="Cambiar imagen";await loadBase();}catch(e){imageMsg.textContent="No se pudo guardar la imagen: "+(e.message||e)+". Verifica permisos del bucket product-images y las políticas de Storage.";showModuleError(e)}finally{imageSave.disabled=false}});
+   imageSave?.addEventListener("click",async()=>{const file=imageInput?.files?.[0];if(!file){imageMsg.textContent="Selecciona primero una imagen.";imageInput?.focus();return}if(!(["image/jpeg","image/png","image/webp"].includes(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name))||file.size>10*1024*1024){imageMsg.textContent="Usa una imagen JPG, PNG o WebP de máximo 10 MB.";return}imageSave.disabled=true;imageMsg.textContent="Subiendo imagen…";try{const uploadFile=await compressImageBeforeUpload(file);const safe=uploadFile.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]/g,"-");const path=`models/${selectedProduct.id}/${selectedModel.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}-${safe}`;const imageUrl=await uploadImageToR2(path,uploadFile);const upd=await db.from("product_models").update({image_urls:[imageUrl],updated_at:new Date().toISOString()}).eq("id",selectedModel.id).eq("product_id",selectedProduct.id);if(upd.error)throw upd.error;selectedModel.image_urls=[imageUrl];models=models.map(m=>m.id===selectedModel.id?{...m,image_urls:[imageUrl]}:m);imagePreview.innerHTML=`<img src="${esc(imageUrl)}" alt="${esc(selectedModel.name||"Imagen del modelo")}">`;imageInput.value="";imageMsg.textContent="Imagen guardada correctamente. Ya está asociada a este modelo.";imageSave.textContent="Cambiar imagen";await loadBase();}catch(e){imageMsg.textContent="No se pudo guardar la imagen: "+(e.message||e)+". Verifica permisos del bucket product-images y las políticas de Storage.";showModuleError(e)}finally{imageSave.disabled=false}});
    w.querySelector("#variantSearch")?.addEventListener("input",e=>{variantSearch=e.target.value;const pos=e.target.selectionStart;render().then(()=>{const el=w.querySelector("#variantSearch");if(el){el.focus();el.setSelectionRange(pos,pos)}})});
    w.querySelector("#catalogVariantForm")?.addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget,d=Object.fromEntries(new FormData(f)),stock=Number(d.stock),price=d.price===""?null:Number(d.price),msg=w.querySelector("#catalogVariantMsg"),btn=f.querySelector("button[type=submit]");if(!d.size.trim()||!Number.isInteger(stock)||stock<0||(price!==null&&(!Number.isFinite(price)||price<0))){msg.textContent="Revisa talla, stock y precio.";return}btn.disabled=true;const r=await db.from("product_model_variants").insert({model_id:selectedModel.id,size:d.size.trim(),color:d.color.trim()||"Único",stock,price,active:true});btn.disabled=false;if(r.error){msg.textContent="No se pudo guardar: "+r.error.message;return}variantSearch="";await render()});
    w.querySelectorAll("[data-save-variant]").forEach(b=>b.onclick=async()=>{const id=b.dataset.saveVariant,stock=Number(w.querySelector(`[data-stock="${id}"]`)?.value);if(!Number.isInteger(stock)||stock<0){showModuleError("El stock debe ser un entero igual o mayor que cero.");return}b.disabled=true;const r=await db.from("product_model_variants").update({stock}).eq("id",id);b.disabled=false;if(r.error){showModuleError(r.error);return}b.textContent="Guardado";b.classList.add("is-saved")});
@@ -1301,7 +1324,7 @@ async function editProductForm(p=null){
  if(!d.name||!d.sku||!Number.isFinite(d.price)||d.price<0){msg.textContent="Revisa nombre, SKU y precio.";return}
  const dup=await db.from("products").select("id,sku").ilike("sku",d.sku);if(dup.error){msg.textContent="No se pudo validar el SKU: "+dup.error.message;return}if((dup.data||[]).some(x=>x.id!==p?.id)){msg.textContent="Ese SKU ya está asignado a otro producto.";f.elements.sku.focus();return}
  btn.disabled=true;msg.textContent="Guardando…";try{const res=p?await db.from("products").update(d).eq("id",p.id).select("id").single():await db.from("products").insert(d).select("id").single();if(res.error)throw res.error;
- if(!p){const productId=res.data.id,files=Array.from($("newProductModelFiles")?.files||[]);if(files.length){const bad=files.find(x=>!( ["image/jpeg","image/png","image/webp"].includes(x.type)||/\.(jpe?g|png|webp)$/i.test(x.name))||x.size>10*1024*1024);if(bad)throw new Error(`${bad.name}: usa JPG, PNG o WebP de hasta 10 MB.`);let created=0;for(let i=0;i<files.length;i++){const file=files[i],safe=file.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]/g,"-");const path=`models/${productId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}-${safe}`;const up=await db.storage.from("product-images").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type||undefined});if(up.error)throw up.error;const pub=db.storage.from("product-images").getPublicUrl(up.data.path);const ins=await db.from("product_models").insert({product_id:productId,name:`Modelo ${String(i+1).padStart(2,"0")}`,image_urls:[pub.data.publicUrl],active:true});if(ins.error)throw ins.error;created++}msg.textContent=`Producto guardado y ${created} modelo(s) creado(s).`; }await moduleProducts();closeProduct();return}
+ if(!p){const productId=res.data.id,files=Array.from($("newProductModelFiles")?.files||[]);if(files.length){const bad=files.find(x=>!( ["image/jpeg","image/png","image/webp"].includes(x.type)||/\.(jpe?g|png|webp)$/i.test(x.name))||x.size>10*1024*1024);if(bad)throw new Error(`${bad.name}: usa JPG, PNG o WebP de hasta 10 MB.`);let created=0;for(let i=0;i<files.length;i++){const file=files[i],uploadFile=await compressImageBeforeUpload(file),safe=uploadFile.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]/g,"-");const path=`models/${productId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}-${safe}`;const publicUrl=await uploadImageToR2(path,uploadFile);const ins=await db.from("product_models").insert({product_id:productId,name:`Modelo ${String(i+1).padStart(2,"0")}`,image_urls:[publicUrl],active:true});if(ins.error)throw ins.error;created++}msg.textContent=`Producto guardado y ${created} modelo(s) creado(s).`; }await moduleProducts();closeProduct();return}
  msg.textContent="Cambios guardados correctamente.";await moduleProducts();
  }catch(e){msg.textContent="No se pudo guardar: "+(e.message||e);showModuleError(e)}finally{btn.disabled=false}};
  if(p){await loadProductModels(p.id);$("syncProductImagesBtn").onclick=async()=>{const b=$("syncProductImagesBtn");b.disabled=true;try{await syncProductImagesToModels(p.id)}catch(e){$("modelManageMsg").textContent="No se pudo sincronizar: "+(e.message||e)}finally{b.disabled=false}}}
@@ -1316,7 +1339,7 @@ async function editProductForm(p=null){
   }catch(e){box.innerHTML="";$("modelManageMsg").textContent="No se pudieron cargar los modelos: "+(e.message||e)}
  }
  if(p){$("createModelsBtn").onclick=async()=>{const input=$("modelImageFiles"),files=Array.from(input.files||[]),msg=$("modelManageMsg"),btn=$("createModelsBtn");if(!files.length){msg.textContent="Selecciona una o varias imágenes desde tu computadora.";return}const bad=files.find(x=>!(["image/jpeg","image/png","image/webp"].includes(x.type)||/\.(jpe?g|png|webp)$/i.test(x.name))||x.size>10*1024*1024);if(bad){msg.textContent=`${bad.name}: usa JPG, PNG o WebP de hasta 10 MB.`;return}btn.disabled=true;let created=0;try{const existing=await db.from("product_models").select("name").eq("product_id",p.id);if(existing.error)throw existing.error;let next=(existing.data||[]).reduce((n,m)=>{const hit=(m.name||"").match(/^Modelo\s+(\d+)$/i);return hit?Math.max(n,Number(hit[1])):n},0)+1;
-  for(const file of files){const safe=file.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]/g,"-");const path=`models/${p.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}-${safe}`;const up=await db.storage.from("product-images").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type||undefined});if(up.error)throw up.error;const {data:pub}=db.storage.from("product-images").getPublicUrl(up.data.path);const ins=await db.from("product_models").insert({product_id:p.id,name:`Modelo ${next++}`,image_urls:[pub.publicUrl],active:true});if(ins.error)throw ins.error;created++}
+  for(const file of files){const uploadFile=await compressImageBeforeUpload(file);const safe=uploadFile.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]/g,"-");const path=`models/${p.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}-${safe}`;const publicUrl=await uploadImageToR2(path,uploadFile);const ins=await db.from("product_models").insert({product_id:p.id,name:`Modelo ${next++}`,image_urls:[publicUrl],active:true});if(ins.error)throw ins.error;created++}
   input.value="";msg.textContent=`${created} modelo(s) creado(s). Ya aparecen en la sección Stock.`;await loadProductModels(p.id)
  }catch(e){msg.textContent="No se completó la carga: "+(e.message||e)+". Revisa permisos de Storage y RLS.";showModuleError(e)}finally{btn.disabled=false}}}
 
@@ -1673,8 +1696,7 @@ function addSaleCartLocal(){
   if(!v){saleFeedbackLocal("Selecciona una talla o color con stock.",true);return}
   if(!Number.isInteger(q)||q<1||q>Number(v.stock)){saleFeedbackLocal("La cantidad debe ser válida y no superar el stock disponible.",true);return}
   const existing=saleCart.find(x=>String(x.variant_id)===String(v.id));
-  if(existing){if(existing.qty+q>Number(v.stock)){saleFeedbackLocal("No hay suficiente stock para aumentar la cantidad.",true);return}existing.qty+=q}
-  else saleCart.push({variant_id:v.id,product_id:p.id,product_name:p.name,model_id:m.id,model_name:m.name,size:v.size,color:v.color||"",qty:q,price:Number(v.price??p.price)||0,stock:Number(v.stock)||0});
+  if(existing){if(existing.qty+q>Number(v.stock)){saleFeedbackLocal("No hay suficiente stock para aumentar la cantidad.",true);return}existing.qty+=q}  else saleCart.push({variant_id:v.id,product_id:p.id,product_name:p.name,model_id:m.id,model_name:m.name,size:v.size,color:v.color||"",qty:q,price:Number(v.price??p.price)||0,stock:Number(v.stock)||0});
   renderSaleCartLocal();
   saleFeedbackLocal(`✓ ${p.name} · ${m.name} agregado al carrito.`);
   $("saleQty").value="1";
@@ -1774,9 +1796,9 @@ async function moduleDesignBanners(){
    try{
     const patch={hero_title:String(new FormData(form).get("hero_title")||""),hero_top_text:String(new FormData(form).get("hero_top_text")||""),hero_description:String(new FormData(form).get("hero_description")||""),updated_at:new Date().toISOString()};
     if(selectedFile){
-      const safe=selectedFile.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]/g,"-");
-      const path=`banners/${Date.now()}-${Math.random().toString(36).slice(2,8)}-${safe}`;
-      const up=await db.storage.from("product-images").upload(path,selectedFile,{cacheControl:"3600",upsert:false,contentType:selectedFile.type});
+      const uploadFile=await compressImageBeforeUpload(selectedFile);const safe=uploadFile.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]/g,"-");
+       const path=`banners/${Date.now()}-${Math.random().toString(36).slice(2,8)}-${safe}`;
+       const up=await db.storage.from("product-images").upload(path,uploadFile,{cacheControl:"3600",upsert:false,contentType:uploadFile.type});
       if(up.error)throw up.error;
       uploadedPath=up.data.path;
       const pub=db.storage.from("product-images").getPublicUrl(uploadedPath);
@@ -2523,8 +2545,7 @@ function qpayload(){const c=qcalc();const name=(qv('qQuoteName')?.value||'').tri
 function qsave(){try{const q=qpayload(),all=qloadAll(),idx=all.findIndex(x=>x.id===q.id);if(idx>=0)all[idx]=q;else all.unshift(q);qsaveAll(all);quoteEditingId=q.id;qmessage('Cotización guardada en este navegador. Exporta una copia si necesitas compartirla o respaldarla.','info');qrenderSaved();}catch(e){qmessage(e.message,'error')}}
 function qrenderSaved(){const root=qv('qSavedList');if(!root)return;const all=qloadAll();root.innerHTML=all.map(q=>`<div class="quote-saved"><div style="min-width:0"><b>${esc(q.name)}</b><small>${esc(q.origin)} · ${esc(q.supplier||'Sin proveedor')} · ${esc((q.updatedAt||'').slice(0,10))}<br>Costo total: ${qusd(q.calc?.totalCost||0)} · Saldo: ${qusd(q.calc?.balance||0)}</small></div><div class="quote-actions"><button class="quote-btn" data-qload="${esc(q.id)}">Abrir</button><button class="quote-btn" data-qexport="${esc(q.id)}">JSON</button><button class="quote-btn danger" data-qdelete="${esc(q.id)}">Eliminar</button></div></div>`).join('')||'<div class="quote-empty">Todavía no hay cotizaciones guardadas en este navegador.</div>'}
 function qload(q){quoteEditingId=q.id;quoteLines=(q.lines||[]).map(l=>({...l}));quotePayments=(q.payments||[]).map(x=>({...x}));qv('qQuoteName').value=q.name||'';qv('qSupplier').value=q.supplier||'';qv('qOrigin').value=q.origin||'Nacional';qv('qCurrency').value=q.currency||'USD';qv('qCurrencyRate').value=q.currencyRate||1;qv('qBcvRate').value=q.bcvRate||'';qv('qAllocation').value=q.allocation||'value';qv('qPricingMode').value=q.pricingMode||'markup';qv('qTarget').value=q.target??30;for(const id of ['qTransport','qCustoms','qCommission','qPacking','qOther'])qv(id).value=q.costs?.[id.slice(1).toLowerCase()]??0; qv('qTransport').value=q.costs?.transport??0;qv('qCustoms').value=q.costs?.customs??0;qv('qCommission').value=q.costs?.commission??0;qv('qPacking').value=q.costs?.packing??0;qv('qOther').value=q.costs?.other??0;qv('qNotes').value=q.notes||'';qrenderLines();qmessage('Cotización cargada. Puedes editarla y guardar los cambios.','info');qv('qEditor')?.scrollIntoView({behavior:'smooth',block:'start'})}
-function qdownload(name,content,type='application/json'){const blob=new Blob([content],{type});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-function moduleMerchandiseQuoter(){
+function qdownload(name,content,type='application/json'){const blob=new Blob([content],{type});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}function moduleMerchandiseQuoter(){
  moduleShell('Cotizador de mercancía','Cotiza compras nacionales e importaciones de Colombia y China, distribuye gastos compartidos y calcula costo unitario, precio sugerido, ganancia y abonos.',`<div class="quote-page" id="qRoot">
  <div id="qMessage" class="quote-note" role="status">Los cálculos se actualizan automáticamente. Las cotizaciones se guardan en este navegador y no modifican el inventario.</div>
  <div class="quote-actions" style="margin:12px 0"><button type="button" class="quote-btn primary" id="qNew">+ Nueva cotización</button><button type="button" class="quote-btn" id="qSave">Guardar cotización</button><button type="button" class="quote-btn" id="qExportCsv">Exportar detalle CSV</button></div>
@@ -2553,6 +2574,33 @@ function moduleMerchandiseQuoter(){
  qv('qSavedList').addEventListener('click',e=>{const load=e.target.closest('[data-qload]'),del=e.target.closest('[data-qdelete]'),exp=e.target.closest('[data-qexport]');const all=qloadAll();if(load){const q=all.find(x=>x.id===load.dataset.qload);if(q)qload(q)}if(del){const q=all.find(x=>x.id===del.dataset.qdelete);if(q&&confirm('¿Eliminar la cotización guardada "'+q.name+'" de este navegador?')){qsaveAll(all.filter(x=>x.id!==q.id));qrenderSaved()}}if(exp){const q=all.find(x=>x.id===exp.dataset.qexport);if(q)qdownload('ENOC-cotizacion-'+q.name.replace(/[^a-z0-9-_]+/gi,'_')+'.json',JSON.stringify(q,null,2))}});
  qv('qExportCsv').onclick=()=>{const c=qcalc();if(!c.results.length){qmessage('Agrega al menos un artículo para exportar.','error');return}const rows=[['Cotizacion',qv('qQuoteName').value],['Proveedor',qv('qSupplier').value],['Origen',qv('qOrigin').value],['Moneda',qoriginCurrency()],['Tasa moneda por USD',qcurrencyRate()],['Tasa BCV',c.rateBCV],[],['Articulo','Cantidad','Costo compra USD','Gasto asignado USD','Costo total USD','Costo unitario USD','Precio sugerido sin IVA USD','Precio sugerido con IVA USD','Ganancia unitaria USD','Margen %','Precio final Bs.'],...c.results.map(r=>[r.name,r.qty,r.base,r.allocated,r.total,r.unit,r.priceBase,r.priceFinal,r.profit,r.realMargin,r.priceBs]),[],['Compra mercancía USD',c.purchase],['Gastos compartidos USD',c.shared],['Costo total USD',c.totalCost],['Abonado USD',c.paid],['Saldo pendiente USD',c.balance]];const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');qdownload('ENOC-cotizador-'+(qv('qQuoteName').value||'mercancia').replace(/[^a-z0-9-_]+/gi,'_')+'.csv','\ufeff'+csv,'text/csv;charset=utf-8')};
  qrenderSaved();qrenderResults();
+}
+</script>
+
+
+<script>
+/* Optimización de imágenes de prueba: solo afecta a nuevas subidas desde esta copia. */
+async function compressImageBeforeUpload(file, options = {}) {
+  if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type || "")) return file;
+  try {
+    const maxDimension = options.maxDimension || 1800, quality = options.quality || 0.84;
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale)), height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas"); canvas.width = width; canvas.height = height;
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if (!ctx) { bitmap.close?.(); return file; }
+    ctx.drawImage(bitmap, 0, 0, width, height); bitmap.close?.();
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/webp", quality));
+    if (!blob || blob.size >= file.size * 0.9) return file;
+    const base = (file.name || "imagen").replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9._-]/g, "-") || "imagen";
+    const optimized = new File([blob], base + ".webp", { type: "image/webp", lastModified: Date.now() });
+    console.info("[ENOC imagen]", file.name, file.size, "->", optimized.size, "bytes");
+    return optimized;
+  } catch (error) {
+    console.warn("[ENOC imagen] No se pudo optimizar; se subirá el original.", error);
+    return file;
+  }
 }
 </script>
 
