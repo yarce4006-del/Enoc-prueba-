@@ -18,7 +18,9 @@ document.getElementById('loginForm').addEventListener('submit',async e=>{
    // API v2: intenta obtener el token independiente de Cloudflare para el módulo migrado.
    // Si la API todavía no está desplegada/configurada, se conserva el acceso legado y se informa en el panel.
    try {
-     const apiResponse = await fetch('https://enoc-catalog-api-v2-candidate.enoc365-image-migration.workers.dev/api/admin/login', {
+     const apiBase = window.ENOC_API_V2_URL || '';
+     if (!apiBase) throw new Error('ENOC_API_V2_URL no está configurada');
+     const apiResponse = await fetch(apiBase.replace(/\\/$/, '') + '/api/admin/login', {
        method:'POST', headers:{'Content-Type':'application/json'},
        body:JSON.stringify({username:email,password})
      });
