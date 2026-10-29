@@ -1951,30 +1951,29 @@ let cart=[], selectedProduct=null, selectedSizes=[], selectedColor=null, selecte
 
 async function loadProductsFromSupabase(){
  try{
-   // Carga principal: estas 3 tablas son suficientes para mostrar el catálogo.
-   // Los modelos avanzados se intentan cargar después, pero si esas tablas/RLS no existen
-   // el catálogo NO debe quedar vacío.
-   const [{data: categories, error: catError},{data: rows, error: productError},{data: variants, error: variantError}] = await Promise.all([
-     supabaseClient.from("categories").select("id,name"),
-     supabaseClient.from("products").select("id,sku,name,description,category_id,price,image_url,image_urls,image_labels,active,created_at,updated_at").eq("active",true).order("created_at",{ascending:false}),
-     supabaseClient.from("product_variants").select("id,product_id,sku,size,color,stock,price,active,created_at,updated_at").eq("active",true)
+   const apiGet=async path=>{const r=await fetch(ENOC_CATALOG_API+path,{cache:"no-store"});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||("Cloudflare API "+r.status));return j.data};
+   const [categories,rows,variants]=await Promise.all([
+     apiGet("/api/categories"),
+     apiGet("/api/products"),
+     apiGet("/api/products").then(async ps=>{
+       const all=[];
+       for(const p of (ps||[])){try{all.push(...(await apiGet("/api/legacy-variants?product_id="+encodeURIComponent(p.id))||[]))}catch(e){console.warn("Legacy variants unavailable",e)}}
+       return all;
+     })
    ]);
-   if(catError) throw catError;
-   if(productError) throw productError;
-   if(variantError) throw variantError;
-
-   let models=[], modelVars=[];
+   let models=[],modelVars=[];
    try{
-     const [{data:m,error:me},{data:mv,error:mve}] = await Promise.all([
-       supabaseClient.from("product_models").select("id,product_id,name,image_urls,active,created_at,updated_at").eq("active",true).order("created_at",{ascending:true}),
-       supabaseClient.from("product_model_variants").select("id,model_id,size,color,stock,price,active,created_at,updated_at").eq("active",true)
-     ]);
-     if(!me && !mve){ models=m||[]; modelVars=mv||[]; }
-     else console.warn("ENOC / modelos opcionales no disponibles; se usa el catálogo base.",me||mve);
-   }catch(modelError){
-     console.warn("ENOC / tablas de modelos opcionales no disponibles; se usa el catálogo base.",modelError);
-   }
-
+     models=await apiGet("/api/models")||[];
+     for(const m of models){
+       try{m.image_urls=Array.isArray(m.image_urls)?m.image_urls:(typeof m.image_urls==="string"?JSON.parse(m.image_urls||"[]"):[])}catch(_){m.image_urls=[]}
+       m.variants=await apiGet("/api/variants?model_id="+encodeURIComponent(m.id))||[];
+     }
+     modelVars=models.flatMap(m=>m.variants||[]);
+   }catch(modelError){console.warn("ENOC / Cloudflare models optional data unavailable",modelError);models=[];modelVars=[]}
+   (rows||[]).forEach(p=>{
+     try{p.image_urls=Array.isArray(p.image_urls)?p.image_urls:(typeof p.image_urls==="string"?JSON.parse(p.image_urls||"[]"):[])}catch(_){p.image_urls=[]}
+     try{p.image_labels=Array.isArray(p.image_labels)?p.image_labels:(typeof p.image_labels==="string"?JSON.parse(p.image_labels||"[]"):[])}catch(_){p.image_labels=[]}
+   });
    const categoryMap=new Map((categories||[]).map(c=>[c.id,c.name]));
    const oldVariantMap=new Map();
    (variants||[]).forEach(v=>{
@@ -2014,12 +2013,12 @@ async function loadProductsFromSupabase(){
    render();
    if(!products.length){
      const grid=document.getElementById("products");
-     if(grid) grid.innerHTML='<div class="muted" style="padding:24px 0">No hay productos activos en Supabase.</div>';
+     if(grid) grid.innerHTML='<div class="muted" style="padding:24px 0">No hay productos activos en Cloudflare.</div>';
    }
  }catch(error){
-   console.error("ENOC / Supabase:",error);
+   console.error("ENOC / Cloudflare API:",error);
    const grid=document.getElementById("products");
-   if(grid) grid.innerHTML='<div class="muted" style="padding:24px 0">No se pudieron cargar los productos. Revisa la conexión y las políticas RLS de Supabase.</div>';
+   if(grid) grid.innerHTML='<div class="muted" style="padding:24px 0">No se pudieron cargar los productos. Revisa la conexión con la API de Cloudflare.</div>';
  }
 }
 function renderCategories(categories){
