@@ -278,6 +278,69 @@ async function admin(request,url,env,headers) {
     await env.DB.batch(batch);
     return out({data:{id,operation_count:selected.length,total_sales_usd:salesUsd,total_sales_bs:salesBs,taxable_base_bs:taxable,iva_amount_bs:iva,patente_amount_bs:patente,total_reserved_bs:total}},201,headers);
   }
+  if(m==="POST"&&p==="/api/admin/cashea/confirm"){
+    const b=await body(request),id=String(b.operation_id||"");if(!id)return out({error:"operation_id is required"},400,headers);
+    const op=await env.DB.prepare("SELECT * FROM cashea_operations WHERE id=?").bind(id).first();
+    if(!op)return out({error:"Cashea operation not found"},404,headers);
+    if(op.status==="confirmed"||op.status==="settled")return out({error:"Operation is already confirmed"},409,headers);
+    const items=(await env.DB.prepare("SELECT * FROM cashea_operation_items WHERE operation_id=?").bind(id).all()).results;
+    if(!items.length)return out({error:"Operation has no items"},409,headers);
+    const needs=new Map();for(const it of items){if(!it.variant_id||!Number.isInteger(Number(it.quantity))||Number(it.quantity)<1)return out({error:"Every item must have a valid variant and quantity"},409,headers);needs.set(String(it.variant_id),(needs.get(String(it.variant_id))||0)+Number(it.quantity));}
+    for(const [vid,q] of needs){const v=await env.DB.prepare("SELECT stock,active FROM product_model_variants WHERE id=?").bind(vid).first();if(!v||!v.active||Number(v.stock)<q)return out({error:"Insufficient stock for variant "+vid},409,headers);}
+    const total=Number(op.sale_total),initial=Number(op.initial_amount||0),financed=round2(total-initial),salePct=Number(op.commission_sale_pct||0),finPct=Number(op.commission_financed_pct||0);
+    if(!Number.isFinite(total)||total<0||initial<0||initial>total||salePct<0||salePct>100||finPct<0||finPct>100)return out({error:"Operation amounts or commission percentages are invalid"},409,headers);
+    const commission=round2(total*salePct/100+financed*finPct/100),net=round2(financed-financed*finPct/100);
+    const batch=[];for(const [vid,q] of needs)batch.push(env.DB.prepare("UPDATE product_model_variants SET stock=stock-?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND active=1 AND stock>=?").bind(q,vid,q));
+    batch.push(env.DB.prepare("UPDATE cashea_operations SET financed_amount=?,estimated_commission=?,estimated_net_amount=?,status='confirmed',confirmed_at=CURRENT_TIMESTAMP,confirmed_by='admin',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status NOT IN ('confirmed','settled','cancelled')").bind(financed.toFixed(2),commission.toFixed(2),net.toFixed(2),id));
+    await env.DB.batch(batch);
+    return out({data:{id,status:"confirmed",financed_amount:financed,estimated_commission:commission,estimated_net_amount:net}},200,headers);
+  }
+  if(m==="POST"&&p==="/api/admin/cashea/exchange"){
+    const b=await body(request),opId=String(b.operation_id||""),itemId=String(b.item_id||""),newId=String(b.new_variant_id||""),reason=String(b.reason||"").trim();
+    if(!opId||!itemId||!newId||!reason)return out({error:"operation_id, item_id, new_variant_id and reason are required"},400,headers);
+    const [op,item,newV]=await Promise.all([
+      env.DB.prepare("SELECT id,status FROM cashea_operations WHERE id=?").bind(opId).first(),
+      env.DB.prepare("SELECT * FROM cashea_operation_items WHERE id=? AND operation_id=?").bind(itemId,opId).first(),
+      env.DB.prepare("SELECT v.*,m.product_id,m.name AS model_name FROM product_model_variants v JOIN product_models m ON m.id=v.model_id WHERE v.id=? AND v.active=1 AND m.active=1").bind(newId).first()
+    ]);
+    if(!op||!item||!newV)return out({error:"Operation, item or new variant not found"},404,headers);
+    if(!["confirmed","settled"].includes(op.status))return out({error:"Only confirmed operations can exchange items"},409,headers);
+    if(String(item.variant_id)===newId)return out({error:"Choose a different variant"},400,headers);
+    if(Number(newV.stock)<Number(item.quantity))return out({error:"Insufficient stock for the new variant"},409,headers);
+    const oldV=await env.DB.prepare("SELECT v.*,m.product_id,m.name AS model_name,p.name AS product_name FROM product_model_variants v JOIN product_models m ON m.id=v.model_id JOIN products p ON p.id=m.product_id WHERE v.id=?").bind(String(item.variant_id)).first();
+    if(!oldV)return out({error:"Original variant not found"},409,headers);
+    await env.DB.batch([
+      env.DB.prepare("UPDATE product_model_variants SET stock=stock+?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(Number(item.quantity),String(item.variant_id)),
+      env.DB.prepare("UPDATE product_model_variants SET stock=stock-?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND active=1 AND stock>=?").bind(Number(item.quantity),newId,Number(item.quantity)),
+      env.DB.prepare("INSERT INTO cashea_item_exchanges (id,operation_id,operation_item_id,from_variant_id,to_variant_id,from_product_id,to_product_id,from_product_name,from_model_name,from_size,from_color,to_product_name,to_model_name,to_size,to_color,quantity,reason,changed_by,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'admin',CURRENT_TIMESTAMP)").bind(crypto.randomUUID(),opId,itemId,String(item.variant_id),newId,oldV.product_id,newV.product_id,oldV.product_name,oldV.model_name,oldV.size,oldV.color,newV.product_name||newV.name,newV.model_name,newV.size,newV.color,Number(item.quantity),reason),
+      env.DB.prepare("UPDATE cashea_operation_items SET variant_id=?,product_id=?,product_name=?,model_name=?,size=?,color=?,sku=(SELECT sku FROM products WHERE id=?),unit_price=?,line_total=? WHERE id=? AND operation_id=?").bind(newId,newV.product_id,newV.product_name||newV.name,newV.model_name,newV.size,newV.color,newV.product_id,Number(newV.price??item.unit_price).toFixed(2),(Number(newV.price??item.unit_price)*Number(item.quantity)).toFixed(2),itemId,opId)
+    ]);
+    return out({data:{ok:true,message:"Cambio registrado y stock actualizado",operation_id:opId,item_id:itemId}},200,headers);
+  }
+  if(m==="POST"&&p==="/api/admin/cashea/payments/batches"){
+    const b=await body(request),date=String(b.payment_date||""),amount=Number(b.amount_received),currency=String(b.currency||"USD"),ids=Array.isArray(b.operation_ids)?[...new Set(b.operation_ids.map(String))]:[];
+    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!Number.isFinite(amount)||amount<=0||!ids.length)return out({error:"Valid payment_date, positive amount_received and operation_ids are required"},400,headers);
+    const ops=[];for(const id of ids){const op=await env.DB.prepare("SELECT * FROM cashea_operations WHERE id=?").bind(id).first();if(!op||op.status!=="confirmed")return out({error:"Every operation must exist and be awaiting payment"},409,headers);if(String(op.currency||"USD")!==currency)return out({error:"Payment currency does not match operation currency"},409,headers);const prior=await env.DB.prepare("SELECT COUNT(*) n FROM cashea_payment_batch_operations WHERE operation_id=?").bind(id).first();if(Number(prior.n)>0)return out({error:"An operation is already linked to a payment batch"},409,headers);ops.push(op);}
+    const expected=round2(ops.reduce((s,o)=>s+Number(o.estimated_net_amount||0),0));if(Math.abs(expected-amount)>0.01)return out({error:"Received amount does not match the combined net pending amount",expected_amount:expected},409,headers);
+    const batchId=crypto.randomUUID(),statements=[env.DB.prepare("INSERT INTO cashea_payment_batches (id,payment_date,amount_received,currency,reference,notes,registered_by,created_at) VALUES (?,?,?,?,?,?,NULL,CURRENT_TIMESTAMP)").bind(batchId,date,amount.toFixed(2),currency,b.reference??null,b.notes??null)];
+    for(const id of ids){statements.push(env.DB.prepare("INSERT INTO cashea_payment_batch_operations (id,payment_batch_id,operation_id,created_at) VALUES (?,?,?,CURRENT_TIMESTAMP)").bind(crypto.randomUUID(),batchId,id));statements.push(env.DB.prepare("UPDATE cashea_operations SET status='settled',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='confirmed'").bind(id));}
+    await env.DB.batch(statements);
+    return out({data:{id:batchId,payment_date:date,amount_received:amount,currency,operation_ids:ids,status:"registered"}},201,headers);
+  }
+  if(m==="POST"&&p==="/api/admin/cashea/payments/reverse"){
+    const b=await body(request),id=String(b.operation_id||""),reason=String(b.reason||"Pago marcado por error").trim();if(!id)return out({error:"operation_id is required"},400,headers);
+    const op=await env.DB.prepare("SELECT * FROM cashea_operations WHERE id=? AND status='settled'").bind(id).first();if(!op)return out({error:"Settled operation not found"},404,headers);
+    const links=(await env.DB.prepare("SELECT b.*,l.id AS link_id FROM cashea_payment_batch_operations l JOIN cashea_payment_batches b ON b.id=l.payment_batch_id WHERE l.operation_id=?").bind(id).all()).results;
+    if(links.length!==1)return out({error:"Operation must belong to exactly one payment batch to reverse"},409,headers);
+    const settlements=await env.DB.prepare("SELECT COUNT(*) n FROM cashea_settlements WHERE operation_id=?").bind(id).first();if(Number(settlements.n)>0)return out({error:"A settlement exists for this operation; reversal requires manual reconciliation"},409,headers);
+    const link=links[0],revId=crypto.randomUUID();
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO cashea_payment_reversals (id,original_batch_id,operation_id,payment_date,amount_received,currency,reference,original_batch_created_at,reversed_by,reversed_at,reason,operation_reference,customer_name) VALUES (?,?,?,?,?,?,?,?,NULL,CURRENT_TIMESTAMP,?,?,?)").bind(revId,link.id,id,link.payment_date,op.estimated_net_amount||"0",op.currency||"USD",link.reference,link.created_at,reason,op.operation_reference,op.customer_name),
+      env.DB.prepare("DELETE FROM cashea_payment_batch_operations WHERE id=?").bind(link.link_id),
+      env.DB.prepare("UPDATE cashea_operations SET status='confirmed',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='settled'").bind(id)
+    ]);
+    return out({data:{ok:true,id:revId,operation_id:id,status:"confirmed"}},200,headers);
+  }
   if(m==="GET"&&p==="/api/admin/cashea/payments"){
     const [batches,links,reversals]=await env.DB.batch([env.DB.prepare("SELECT * FROM cashea_payment_batches ORDER BY created_at DESC LIMIT 1000"),env.DB.prepare("SELECT * FROM cashea_payment_batch_operations"),env.DB.prepare("SELECT * FROM cashea_payment_reversals ORDER BY reversed_at DESC LIMIT 1000")]);
     return out({data:{batches:batches.results,operations:links.results,reversals:reversals.results}},200,headers);
