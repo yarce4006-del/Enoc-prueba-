@@ -120,9 +120,11 @@ async function createOrder(request,env,headers) {
       if (!variant || variant.product_id!==product.id) return out({error:"A selected size or color is unavailable"},409,headers);
       if (variant.price!==null && variant.price!==undefined) price=Number(variant.price);
       if (Number(variant.stock)<qty) return out({error:"Insufficient stock for a selected variant"},409,headers);
-    } else if (modelId && (item.size!==undefined || item.color!==undefined)) {
+    } else if (modelId) {
+      if (item.size===undefined || item.size===null || String(item.size)==="")
+        return out({error:"A size/variant must be selected for model-based products"},400,headers);
       let q="SELECT stock,price FROM product_model_variants WHERE model_id=? AND active=1 AND size=?";
-      const params=[String(modelId),String(item.size??"")];
+      const params=[String(modelId),String(item.size)];
       if (item.color!==undefined && item.color!==null) { q+=" AND color=?"; params.push(String(item.color)); }
       const variant=await env.DB.prepare(q+" LIMIT 1").bind(...params).first();
       if (!variant) return out({error:"A selected size or color is unavailable"},409,headers);
