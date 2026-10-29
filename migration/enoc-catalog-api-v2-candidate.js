@@ -49,6 +49,7 @@ export default {
       if (url.pathname.startsWith("/api/admin/")) {
         const claims=await verify(request,env);
         if (!claims || claims.role!=="admin") return out({error:"Unauthorized"},401,headers);
+        if (url.pathname.startsWith("/api/admin/cashea/") && request.method === "POST" && env.ENABLE_CASHEA_MUTATIONS !== "true") return out({error:"Cashea write routes are locked until isolated staging validation is complete"},503,headers);
         return await admin(request,url,env,headers);
       }
 
