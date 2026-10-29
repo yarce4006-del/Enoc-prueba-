@@ -78,8 +78,7 @@ export default {
       }
       if (url.pathname === "/api/variants") {
         const mid=url.searchParams.get("model_id"), pid=url.searchParams.get("product_id");
-        if (!mid&&!pid) return out({error:"model_id or product_id is required"},400,headers);
-        const q=mid?env.DB.prepare("SELECT id,model_id,size,color,stock,price,active FROM product_model_variants WHERE active=1 AND model_id=? ORDER BY size,color").bind(mid):env.DB.prepare("SELECT v.id,v.model_id,v.size,v.color,v.stock,v.price,v.active FROM product_model_variants v JOIN product_models m ON m.id=v.model_id WHERE v.active=1 AND m.active=1 AND m.product_id=? ORDER BY m.name,v.size,v.color").bind(pid);
+        const q=mid?env.DB.prepare("SELECT id,model_id,size,color,stock,price,active FROM product_model_variants WHERE active=1 AND model_id=? ORDER BY size,color").bind(mid):pid?env.DB.prepare("SELECT v.id,v.model_id,v.size,v.color,v.stock,v.price,v.active FROM product_model_variants v JOIN product_models m ON m.id=v.model_id WHERE v.active=1 AND m.active=1 AND m.product_id=? ORDER BY m.name,v.size,v.color").bind(pid):env.DB.prepare("SELECT id,model_id,size,color,stock,price,active FROM product_model_variants WHERE active=1 ORDER BY model_id,size,color");
         return out({data:(await q.all()).results},200,headers);
       }
       if (url.pathname === "/api/settings") {
