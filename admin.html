@@ -942,6 +942,15 @@ const SOLD_STATUSES=["Confirmado","Pagado","Entregado","Completado","Enviado"];
 const PENDING_STATUSES=["Espera de verificación","Pendiente"];
 
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+const ENOC_API_V2_BASE="https://enoc-cashea-api-v2.enoc365-image-migration.workers.dev";
+async function casheaApi(path,{method="GET",body:payload}={}){
+ const {data:{session}}=await db.auth.getSession();
+ if(!session?.access_token)throw new Error("Tu sesión expiró. Inicia sesión de nuevo.");
+ const response=await fetch(ENOC_API_V2_BASE+path,{method,headers:{"Authorization":"Bearer "+session.access_token,"Content-Type":"application/json"},body:payload===undefined?undefined:JSON.stringify(payload)});
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(result.error||("API ENOC respondió "+response.status));
+ return result.data;
+}
 
 /* ---------- ENOC R2 image upload integration (candidate; configure endpoint after Worker deployment) ---------- */
 const ENOC_R2_UPLOAD_ENDPOINT = "https://enoc-r2-upload.enoc365-image-migration.workers.dev";
@@ -1888,7 +1897,17 @@ async function fiscalRegisterDeclaration(){
   await loadFiscalData();fiscalRender();fiscalSetFeedback(`Declaración registrada correctamente: ${data.operation_count} venta(s), IVA ${fiscalMoney(data.iva_amount_bs)}, patente ${fiscalMoney(data.patente_amount_bs)}, total ${fiscalMoney(data.total_reserved_bs)}. Los registros siguen disponibles en el historial.`,'success');
  }catch(e){fiscalRender();fiscalSetFeedback('No se pudo registrar la declaración: '+(e.message||e),'error')}
 }
-async function loadFiscalData(){const root=$('fiscalRoot');if(root)root.innerHTML='<div class="fiscal-empty">Cargando resguardos fiscales reales desde Supabase…</div>';const [{data:ops,error:oe},{data:res,error:re},{data:decls,error:de}]=await Promise.all([db.from('cashea_operations').select('id,operation_reference,customer_name,sale_date,currency,sale_total,status,created_at').order('sale_date',{ascending:false}).limit(2000),db.from('cashea_fiscal_reserves').select('*').order('sale_date',{ascending:false}).limit(5000),db.from('cashea_fiscal_declarations').select('*').order('declared_at',{ascending:false}).limit(100)]);if(oe)throw oe;if(re)throw re;if(de)throw de;fiscalOperations=(ops||[]).filter(o=>o.status!=='cancelled'&&String(o.currency||'USD').toUpperCase()==='USD');fiscalRows=res||[];fiscalDeclarations=decls||[];try{fiscalRateInfo=await fetchCurrentBcv()}catch(e){fiscalRateInfo=null}const ids=new Set(fiscalRows.map(r=>r.operation_id));const pending=fiscalOperations.filter(o=>!ids.has(o.id));if(pending.length){const today=fiscalToday(),sameDate=pending.filter(o=>o.sale_date===today);if(sameDate.length&&fiscalRateInfo&&fiscalRateInfo.date===today){let ok=0;for(const o of sameDate){try{const {error}=await db.rpc('register_cashea_fiscal_reserve',{p_operation_id:o.id,p_bcv_rate:fiscalRateInfo.rate,p_rate_date:fiscalRateInfo.date,p_rate_source:'super-function · BCV'});if(!error)ok++}catch{}}if(ok){const {data,error}=await db.from('cashea_fiscal_reserves').select('*').order('sale_date',{ascending:false}).limit(5000);if(!error)fiscalRows=data||[]}}}fiscalRender();if(pending.length){const ids2=new Set(fiscalRows.map(r=>r.operation_id));const left=fiscalOperations.filter(o=>!ids2.has(o.id));if(left.length){fiscalSetFeedback(`${left.length} venta(s) Cashea todavía no tienen resguardo. Para no inventar una tasa histórica, selecciona una operación pendiente y registra la tasa BCV oficial correspondiente a su fecha en el detalle.`);}}}
+async function loadFiscalData(){
+ const root=$('fiscalRoot');if(root)root.innerHTML='<div class="fiscal-empty">Cargando resguardos fiscales desde Cloudflare D1…</div>';
+ const [ops,data]=await Promise.all([casheaApi('/api/admin/cashea/operations'),casheaApi('/api/admin/cashea/fiscal')]);
+ fiscalOperations=(ops||[]).filter(o=>o.status!=='cancelled'&&String(o.currency||'USD').toUpperCase()==='USD');
+ fiscalRows=data?.reserves||[];fiscalDeclarations=data?.declarations||[];
+ try{fiscalRateInfo=await fetchCurrentBcv()}catch(e){fiscalRateInfo=null}
+ fiscalRender();
+ const ids=new Set(fiscalRows.map(r=>r.operation_id));
+ const pending=fiscalOperations.filter(o=>!ids.has(o.id));
+ if(pending.length)fiscalSetFeedback(`${pending.length} venta(s) Cashea todavía no tienen resguardo. Selecciona una operación y registra la tasa BCV oficial correspondiente a su fecha.`);
+}
 async function renderFiscalReserves(){document.body.classList.add('cashea-fullscreen-mode');$('view').innerHTML=`<div id="fiscalRoot"><div class="fiscal-empty">Cargando módulo fiscal…</div></div>`;fiscalSelected=null;fiscalPage=1;fiscalRateFilter='';fiscalSearch='';fiscalFrom=new Date(new Date().getFullYear(),new Date().getMonth(),1).getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')+'-01';fiscalTo=fiscalToday();fiscalRange='month';try{await loadFiscalData()}catch(e){const root=$('fiscalRoot');if(root)root.innerHTML=`<button class="fiscal-back" id="fiscalBack">← Volver a Cashea</button><section class="fiscal-page"><header class="fiscal-head"><div class="fiscal-title"><div class="fiscal-title-icon">${fiscalIcon('doc')}</div><div><h1>Resguardos fiscales</h1><p>Control de IVA y patente de las ventas realizadas por Cashea.</p></div></div></header><div class="fiscal-feedback error">No se pudo cargar el módulo fiscal. ${esc(e.message||e)}. Si la tabla fiscal todavía no existe, aplica primero la migración SQL incluida en el ZIP.</div></section>`;const b=$('fiscalBack');if(b)b.onclick=()=>go('cashea')}}
 async function moduleCashea(){
  const w=$('view');
