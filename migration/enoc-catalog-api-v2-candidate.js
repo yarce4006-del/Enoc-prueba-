@@ -364,7 +364,7 @@ async function verify(req,env){
  // Accept an authenticated Supabase session only after server-side token validation.
  if(!env.SUPABASE_URL||!env.SUPABASE_PUBLISHABLE_KEY)return null;
  try{
-  const r=await fetch(env.SUPABASE_URL.replace(/\\/$/,"")+"/auth/v1/user",{headers:{apikey:env.SUPABASE_PUBLISHABLE_KEY,Authorization:"Bearer "+token}});
+  const r=await fetch(env.SUPABASE_URL.replace(/\/$/,"")+"/auth/v1/user",{headers:{apikey:env.SUPABASE_PUBLISHABLE_KEY,Authorization:"Bearer "+token}});
   if(!r.ok)return null;
   const user=await r.json();
   if(!user?.id||!user?.email)return null;
