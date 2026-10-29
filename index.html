@@ -1911,58 +1911,32 @@ function applyCasheaVisibility(){
 
 async function loadStoreSettings(){
   try{
-    const {data,error}=await supabaseClient.from("store_settings")
-      .select("whatsapp,whatsapp_1_url,whatsapp_2_url,pago_movil_banco,pago_movil_telefono,pago_movil_cedula,binance_id,binance_email,hero_image_url,hero_title,hero_top_text,hero_description,cashea_enabled,updated_at")
-      .order("updated_at",{ascending:false}).limit(1).maybeSingle();
-    if(error) throw error;
+    const response=await fetch(ENOC_CATALOG_API+"/api/settings",{cache:"no-store"});
+    if(!response.ok)throw new Error("Cloudflare settings API: "+response.status);
+    const result=await response.json();
+    const data=result.data;
     if(data){
-      // La configuración compartida de Supabase es la fuente de verdad para el hero.
-      // Esto permite que el Dashboard y el catálogo funcionen en dominios/dispositivos distintos.
-      const heroTextFields=[
-        ["enocHeroTop",data.hero_top_text],
-        ["enocHeroTitle",data.hero_title],
-        ["enocHeroDescription",data.hero_description]
-      ];
-      heroTextFields.forEach(([id,value])=>{
-        const node=document.getElementById(id);
-        if(node && value!==null && value!==undefined) node.textContent=String(value);
-      });
-
-      const configuredLines = [
-        {label:"Línea de atención 1",number:(data.whatsapp_1_url || data.whatsapp || "")},
-        {label:"Línea de atención 2",number:(data.whatsapp_2_url || "")}
-      ].filter(line => line.number);
-      WHATSAPP_LINES = configuredLines.length ? configuredLines : DEFAULT_WHATSAPP_LINES.map(line => ({...line}));
-      PAGO_MOVIL = {
-        banco:data.pago_movil_banco || "",
-        telefono:data.pago_movil_telefono || "",
-        cedula:data.pago_movil_cedula || ""
-      };
-      BINANCE = {id:data.binance_id || "", email:data.binance_email || ""};
-      CASHEA_ENABLED = data.cashea_enabled !== false;
+      const heroTextFields=[["enocHeroTop",data.hero_top_text],["enocHeroTitle",data.hero_title],["enocHeroDescription",data.hero_description]];
+      heroTextFields.forEach(([id,value])=>{const node=document.getElementById(id);if(node&&value!==null&&value!==undefined)node.textContent=String(value)});
+      const configuredLines=[{label:"Línea de atención 1",number:(data.whatsapp_1_url||data.whatsapp||"")},{label:"Línea de atención 2",number:(data.whatsapp_2_url||"")}].filter(line=>line.number);
+      WHATSAPP_LINES=configuredLines.length?configuredLines:DEFAULT_WHATSAPP_LINES.map(line=>({...line}));
+      PAGO_MOVIL={banco:data.pago_movil_banco||"",telefono:data.pago_movil_telefono||"",cedula:data.pago_movil_cedula||""};
+      BINANCE={id:data.binance_id||"",email:data.binance_email||""};
+      CASHEA_ENABLED=data.cashea_enabled!==false&&data.cashea_enabled!==0;
       applyCasheaVisibility();
-
-      const rawHeroURL = data.hero_image_url;
-      HERO_BANNERS = parseHeroBanners(rawHeroURL);
-      HERO_IMAGE_URL = HERO_BANNERS[0] || "";
-      const renderHero=()=>{
-        heroRender(0);
-        initHeroSwipe();
-      };
-      if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",renderHero,{once:true});
-      else renderHero();
+      HERO_BANNERS=parseHeroBanners(data.hero_image_url);
+      HERO_IMAGE_URL=HERO_BANNERS[0]||"";
+      const renderHero=()=>{heroRender(0);initHeroSwipe()};
+      if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",renderHero,{once:true});else renderHero();
     }
-    return data || null;
-  }catch(error){
-    console.error("ENOC / store_settings:",error);
-    return null;
-  }
+    return data||null;
+  }catch(error){console.error("ENOC / Cloudflare settings:",error);return null}
 }
 // Para cobrar realmente dentro del catálogo hay que conectar un proveedor de pago. dentro del catálogo hay que conectar un proveedor de pago.
 // Ejemplo: una URL de checkout segura proporcionada por tu pasarela.
 const ONLINE_PAYMENT_URL = "";
-// ===== SUPABASE =====
-// Solo usamos la Project URL y la Publishable Key. Nunca colocar una secret/service_role key aquí.
+// ===== CLOUDFLARE CATALOG API =====
+const ENOC_CATALOG_API = "https://enoc-catalog-api.enoc365-image-migration.workers.dev";
 const SUPABASE_URL = "https://huspfcjzqedmpavcgfxe.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_GtIoX74VZQg1ezFvVCGlxA_YoFSYq1m";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
