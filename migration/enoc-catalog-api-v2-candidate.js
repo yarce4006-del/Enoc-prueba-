@@ -236,9 +236,55 @@ async function admin(request,url,env,headers) {
     if(!r.meta?.changes)return out({error:"Product not found"},404,headers);
     return out({data:{id,active:0}},200,headers);
   }
+  if(m==="GET"&&p==="/api/admin/cashea/operations"){
+    const r=await env.DB.prepare("SELECT * FROM cashea_operations ORDER BY created_at DESC LIMIT 1000").all();
+    return out({data:r.results},200,headers);
+  }
+  if(m==="GET"&&p==="/api/admin/cashea/items"){
+    const id=url.searchParams.get("operation_id");if(!id)return out({error:"operation_id is required"},400,headers);
+    const r=await env.DB.prepare("SELECT * FROM cashea_operation_items WHERE operation_id=? ORDER BY created_at").bind(id).all();
+    return out({data:r.results},200,headers);
+  }
+  if(m==="GET"&&p==="/api/admin/cashea/fiscal"){
+    const [reserves,declarations]=await env.DB.batch([env.DB.prepare("SELECT * FROM cashea_fiscal_reserves ORDER BY sale_date DESC LIMIT 5000"),env.DB.prepare("SELECT * FROM cashea_fiscal_declarations ORDER BY created_at DESC LIMIT 1000")]);
+    return out({data:{reserves:reserves.results,declarations:declarations.results}},200,headers);
+  }
+  if(m==="POST"&&p==="/api/admin/cashea/fiscal/reserve"){
+    const b=await body(request),rate=Number(b.bcv_rate),rateDate=String(b.rate_date||"");
+    if(!b.operation_id||!Number.isFinite(rate)||rate<=0||!/^\\d{4}-\\d{2}-\\d{2}$/.test(rateDate))return out({error:"operation_id, positive BCV rate and YYYY-MM-DD rate_date are required"},400,headers);
+    const op=await env.DB.prepare("SELECT id,operation_reference,customer_name,sale_date,sale_total,currency FROM cashea_operations WHERE id=?").bind(String(b.operation_id)).first();
+    if(!op)return out({error:"Cashea operation not found"},404,headers);
+    if(op.currency&&op.currency!=="USD")return out({error:"Fiscal reserve calculation currently requires USD operations"},409,headers);
+    const existing=await env.DB.prepare("SELECT id FROM cashea_fiscal_reserves WHERE operation_id=?").bind(op.id).first();
+    if(existing)return out({error:"Fiscal reserve already exists for this operation",id:existing.id},409,headers);
+    const usd=Number(op.sale_total);if(!Number.isFinite(usd)||usd<0)return out({error:"Invalid operation sale total"},409,headers);
+    const totalBs=round2(usd*rate),taxable=round2(totalBs/1.16),iva=round2(taxable*.16),patente=round2(totalBs*.02),id=crypto.randomUUID();
+    await env.DB.prepare("INSERT INTO cashea_fiscal_reserves (id,operation_id,operation_reference,customer_name,sale_date,sale_total_usd,bcv_rate,bcv_rate_date,bcv_rate_source,total_bs,taxable_base_bs,iva_amount_bs,patente_amount_bs,status,created_by,notes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'registered',NULL,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)")
+      .bind(id,op.id,op.operation_reference,op.customer_name,op.sale_date,usd.toFixed(2),rate.toFixed(6),rateDate,String(b.rate_source||"BCV verificado"),totalBs.toFixed(2),taxable.toFixed(2),iva.toFixed(2),patente.toFixed(2),b.notes??null).run();
+    return out({data:{id,operation_id:op.id,total_bs:totalBs,taxable_base_bs:taxable,iva_amount_bs:iva,patente_amount_bs:patente,status:"registered"}},201,headers);
+  }
+  if(m==="POST"&&p==="/api/admin/cashea/fiscal/declarations"){
+    const b=await body(request),start=String(b.period_start||""),end=String(b.period_end||"");
+    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(start)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(end)||start>end)return out({error:"Valid period_start and period_end are required"},400,headers);
+    const ids=Array.isArray(b.reserve_ids)?[...new Set(b.reserve_ids.map(String))]:[];
+    if(!ids.length)return out({error:"reserve_ids must contain at least one fiscal reserve"},400,headers);
+    const rows=(await env.DB.prepare("SELECT * FROM cashea_fiscal_reserves WHERE status='registered' AND declaration_id IS NULL AND sale_date>=? AND sale_date<=? ORDER BY sale_date").bind(start,end).all()).results;
+    const selected=rows.filter(r=>ids.includes(String(r.id)));
+    if(selected.length!==ids.length)return out({error:"One or more reserves are missing, already declared, or outside the selected period"},409,headers);
+    const sum=k=>round2(selected.reduce((a,r)=>a+Number(r[k]||0),0));
+    const id=crypto.randomUUID(),salesUsd=sum("sale_total_usd"),salesBs=sum("total_bs"),taxable=sum("taxable_base_bs"),iva=sum("iva_amount_bs"),patente=sum("patente_amount_bs"),total=round2(iva+patente);
+    const batch=[env.DB.prepare("INSERT INTO cashea_fiscal_declarations (id,period_start,period_end,declared_at,declared_by,operation_count,total_sales_usd,total_sales_bs,taxable_base_bs,iva_amount_bs,patente_amount_bs,total_reserved_bs,reference,notes,status,created_at) VALUES (?,?,?,CURRENT_TIMESTAMP,NULL,?,?,?,?,?,?,?,?,?,'registered',CURRENT_TIMESTAMP)").bind(id,start,end,selected.length,salesUsd.toFixed(2),salesBs.toFixed(2),taxable.toFixed(2),iva.toFixed(2),patente.toFixed(2),total.toFixed(2),b.reference??null,b.notes??null)];
+    for(const r of selected)batch.push(env.DB.prepare("UPDATE cashea_fiscal_reserves SET declaration_id=?,status='declared',updated_at=CURRENT_TIMESTAMP WHERE id=? AND declaration_id IS NULL AND status='registered'").bind(id,r.id));
+    await env.DB.batch(batch);
+    return out({data:{id,operation_count:selected.length,total_sales_usd:salesUsd,total_sales_bs:salesBs,taxable_base_bs:taxable,iva_amount_bs:iva,patente_amount_bs:patente,total_reserved_bs:total}},201,headers);
+  }
+  if(m==="GET"&&p==="/api/admin/cashea/payments"){
+    const [batches,links,reversals]=await env.DB.batch([env.DB.prepare("SELECT * FROM cashea_payment_batches ORDER BY created_at DESC LIMIT 1000"),env.DB.prepare("SELECT * FROM cashea_payment_batch_operations"),env.DB.prepare("SELECT * FROM cashea_payment_reversals ORDER BY reversed_at DESC LIMIT 1000")]);
+    return out({data:{batches:batches.results,operations:links.results,reversals:reversals.results}},200,headers);
+  }
   return out({error:"Admin route not found"},404,headers);
 }
-async function body(req){const n=Number(req.headers.get("Content-Length")||0);if(n>1000000)throw Error("Too large");return req.json();}
+function round2(n){return Math.round((Number(n)+Number.EPSILON)*100)/100;}\nasync function body(req){const n=Number(req.headers.get("Content-Length")||0);if(n>1000000)throw Error("Too large");return req.json();}
 function out(data,status,headers){return new Response(JSON.stringify(data),{status,headers});}
 function equal(a,b){const x=enc.encode(a),y=enc.encode(b);if(x.length!==y.length)return false;let d=0;for(let i=0;i<x.length;i++)d|=x[i]^y[i];return d===0;}
 function b64u(bytes){let s="";for(const b of bytes)s+=String.fromCharCode(b);return btoa(s).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");}
