@@ -101,12 +101,37 @@ async function createOrder(request,env,headers) {
   let subtotal=0;
   for (const item of items) {
     const qty=Number(item.qty ?? item.quantity);
-    const price=Number(item.price ?? item.unit_price);
-    if (!Number.isInteger(qty)||qty<1||qty>100||!Number.isFinite(price)||price<0)
-      return out({error:"Each item needs a valid quantity and price"},400,headers);
-    const name=String(item.name||item.product_name||"").trim();
-    if (!name) return out({error:"Each item needs a product name"},400,headers);
-    normalized.push({...item,qty,name,price});
+    if (!Number.isInteger(qty)||qty<1||qty>100)
+      return out({error:"Each item needs a valid quantity"},400,headers);
+    let productId=item.product_id||null;
+    const modelId=item.model_id||null;
+    if (!productId && modelId) {
+      const model=await env.DB.prepare("SELECT product_id FROM product_models WHERE id=? AND active=1").bind(String(modelId)).first();
+      if (!model) return out({error:"A selected model is unavailable"},409,headers);
+      productId=model.product_id;
+    }
+    if (!productId) return out({error:"Each item must include product_id or model_id"},400,headers);
+    const product=await env.DB.prepare("SELECT id,name,price,active FROM products WHERE id=? AND active=1").bind(String(productId)).first();
+    if (!product) return out({error:"A selected product is unavailable"},409,headers);
+    let price=Number(product.price);
+    const variantId=item.variant_id||item.variantId||null;
+    if (variantId) {
+      const variant=await env.DB.prepare("SELECT v.price,v.stock,v.active,m.product_id FROM product_model_variants v JOIN product_models m ON m.id=v.model_id WHERE v.id=? AND v.active=1 AND m.active=1").bind(String(variantId)).first();
+      if (!variant || variant.product_id!==product.id) return out({error:"A selected size or color is unavailable"},409,headers);
+      if (variant.price!==null && variant.price!==undefined) price=Number(variant.price);
+      if (Number(variant.stock)<qty) return out({error:"Insufficient stock for a selected variant"},409,headers);
+    } else if (modelId && (item.size!==undefined || item.color!==undefined)) {
+      let q="SELECT stock,price FROM product_model_variants WHERE model_id=? AND active=1 AND size=?";
+      const params=[String(modelId),String(item.size??"")];
+      if (item.color!==undefined && item.color!==null) { q+=" AND color=?"; params.push(String(item.color)); }
+      const variant=await env.DB.prepare(q+" LIMIT 1").bind(...params).first();
+      if (!variant) return out({error:"A selected size or color is unavailable"},409,headers);
+      if (Number(variant.stock)<qty) return out({error:"Insufficient stock for a selected variant"},409,headers);
+      if (variant.price!==null && variant.price!==undefined) price=Number(variant.price);
+    }
+    if (!Number.isFinite(price)||price<0) return out({error:"Product price is invalid"},409,headers);
+    const name=String(item.name||item.product_name||product.name).trim();
+    normalized.push({...item,product_id:product.id,qty,name,price});
     subtotal += qty*price;
   }
   if (!Number.isFinite(subtotal)||subtotal>10000000) return out({error:"Invalid order total"},400,headers);
