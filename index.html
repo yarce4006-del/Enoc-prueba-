@@ -897,8 +897,7 @@ function renderFavoriteIcon(id){
    Mobile and desktop are intentionally separated.
    ========================================================= */
 
-/* Prevent accidental width overflow at every viewport. */
-html,body{width:100%;max-width:100%;overflow-x:hidden!important}
+/* Prevent accidental width overflow at every viewport. */html,body{width:100%;max-width:100%;overflow-x:hidden!important}
 
 /* ---------- TABLET / SMALL DESKTOP ---------- */
 @media (min-width:761px) and (max-width:1100px){
@@ -1797,8 +1796,7 @@ function initHeroSwipe(){
   const nextBtn=document.getElementById("heroNextBtn");
   const dots=document.getElementById("heroDots");
   [prevBtn,nextBtn,dots].forEach(control=>{
-    if(control && heroSection && control.parentElement!==heroSection) heroSection.appendChild(control);
-  });
+    if(control && heroSection && control.parentElement!==heroSection) heroSection.appendChild(control);  });
 
   // Controles reales del carrusel: eventos nativos, independientes de onclick inline.
   if(prevBtn) prevBtn.addEventListener("click", e=>{ e.preventDefault(); e.stopPropagation(); heroPrev(); });
@@ -2697,8 +2695,7 @@ async function submitPaymentVerification(){
  const items=cart.map(p=>({product_id:p.id||p.productId||null,name:p.name,model:p.model||"Modelo 1",model_id:p.modelId||null,model_index:Number.isFinite(p.modelIndex)?p.modelIndex:0,model_image:p.modelImage||null,size:p.size,color:p.color,qty:p.qty,price:p.price}));
  const order={
    order_number:orderId,
-   status:"Espera de verificación",
-   customer_name:data.name,
+   status:"Espera de verificación",   customer_name:data.name,
    customer_phone:data.phone,
    customer_address:data.address||"",
    delivery_method:data.delivery,
@@ -3596,7 +3593,6 @@ a:not(.logo){text-decoration-color:rgba(49,91,255,.35)}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}*,*:before,*:after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
 </style>
-
 
 
 <style id="enoc-section-headings-navy-v8">
@@ -4497,7 +4493,6 @@ html{scroll-padding-top:104px;overflow-x:clip}body{margin:0;background:#fff;colo
   #mobileBottomNav, #mobileBottomNav * { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
 </style>
-
 
 <style id="enoc-mobile-nav-over-netlify-fix">
 /* ENOC: la navegación inferior debe quedar por encima del distintivo de Netlify.
