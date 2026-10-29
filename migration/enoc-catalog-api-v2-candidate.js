@@ -301,7 +301,7 @@ async function admin(request,url,env,headers) {
     const [op,item,newV]=await Promise.all([
       env.DB.prepare("SELECT id,status FROM cashea_operations WHERE id=?").bind(opId).first(),
       env.DB.prepare("SELECT * FROM cashea_operation_items WHERE id=? AND operation_id=?").bind(itemId,opId).first(),
-      env.DB.prepare("SELECT v.*,m.product_id,m.name AS model_name FROM product_model_variants v JOIN product_models m ON m.id=v.model_id WHERE v.id=? AND v.active=1 AND m.active=1").bind(newId).first()
+      env.DB.prepare("SELECT v.*,m.product_id,m.name AS model_name,p.name AS product_name FROM product_model_variants v JOIN product_models m ON m.id=v.model_id JOIN products p ON p.id=m.product_id WHERE v.id=? AND v.active=1 AND m.active=1 AND p.active=1").bind(newId).first()
     ]);
     if(!op||!item||!newV)return out({error:"Operation, item or new variant not found"},404,headers);
     if(!["confirmed","settled"].includes(op.status))return out({error:"Only confirmed operations can exchange items"},409,headers);
@@ -312,7 +312,7 @@ async function admin(request,url,env,headers) {
     await env.DB.batch([
       env.DB.prepare("UPDATE product_model_variants SET stock=stock+?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(Number(item.quantity),String(item.variant_id)),
       env.DB.prepare("UPDATE product_model_variants SET stock=stock-?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND active=1 AND stock>=?").bind(Number(item.quantity),newId,Number(item.quantity)),
-      env.DB.prepare("INSERT INTO cashea_item_exchanges (id,operation_id,operation_item_id,from_variant_id,to_variant_id,from_product_id,to_product_id,from_product_name,from_model_name,from_size,from_color,to_product_name,to_model_name,to_size,to_color,quantity,reason,changed_by,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'admin',CURRENT_TIMESTAMP)").bind(crypto.randomUUID(),opId,itemId,String(item.variant_id),newId,oldV.product_id,newV.product_id,oldV.product_name,oldV.model_name,oldV.size,oldV.color,newV.product_name||newV.name,newV.model_name,newV.size,newV.color,Number(item.quantity),reason),
+      env.DB.prepare("INSERT INTO cashea_item_exchanges (id,operation_id,operation_item_id,from_variant_id,to_variant_id,from_product_id,to_product_id,from_product_name,from_model_name,from_size,from_color,to_product_name,to_model_name,to_size,to_color,quantity,reason,changed_by,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'admin',CURRENT_TIMESTAMP)").bind(crypto.randomUUID(),opId,itemId,String(item.variant_id),newId,oldV.product_id,newV.product_id,oldV.product_name,oldV.model_name,oldV.size,oldV.color,newV.product_name,newV.model_name,newV.size,newV.color,Number(item.quantity),reason),
       env.DB.prepare("UPDATE cashea_operation_items SET variant_id=?,product_id=?,product_name=?,model_name=?,size=?,color=?,sku=(SELECT sku FROM products WHERE id=?),unit_price=?,line_total=? WHERE id=? AND operation_id=?").bind(newId,newV.product_id,newV.product_name||newV.name,newV.model_name,newV.size,newV.color,newV.product_id,Number(newV.price??item.unit_price).toFixed(2),(Number(newV.price??item.unit_price)*Number(item.quantity)).toFixed(2),itemId,opId)
     ]);
     return out({data:{ok:true,message:"Cambio registrado y stock actualizado",operation_id:opId,item_id:itemId}},200,headers);
