@@ -353,4 +353,20 @@ function equal(a,b){const x=enc.encode(a),y=enc.encode(b);if(x.length!==y.length
 function b64u(bytes){let s="";for(const b of bytes)s+=String.fromCharCode(b);return btoa(s).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");}
 function unb64u(s){s=s.replace(/-/g,"+").replace(/_/g,"/");return Uint8Array.from(atob(s+"=".repeat((4-s.length%4)%4)),c=>c.charCodeAt(0));}
 async function sign(claims,secret){const h=b64u(enc.encode(JSON.stringify({alg:"HS256",typ:"JWT"}))),p=b64u(enc.encode(JSON.stringify(claims))),data=h+"."+p;const k=await crypto.subtle.importKey("raw",enc.encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);return data+"."+b64u(new Uint8Array(await crypto.subtle.sign("HMAC",k,enc.encode(data))));}
-async function verify(req,env){if(!env.ADMIN_JWT_SECRET)return null;const a=req.headers.get("Authorization")||"",t=a.startsWith("Bearer ")?a.slice(7):"",p=t.split(".");if(p.length!==3)return null;try{const k=await crypto.subtle.importKey("raw",enc.encode(env.ADMIN_JWT_SECRET),{name:"HMAC",hash:"SHA-256"},false,["verify"]);if(!await crypto.subtle.verify("HMAC",k,unb64u(p[2]),enc.encode(p[0]+"."+p[1])))return null;const c=JSON.parse(new TextDecoder().decode(unb64u(p[1])));return c.exp>Math.floor(Date.now()/1000)?c:null;}catch{return null;}}
+async function verify(req,env){
+ const auth=req.headers.get("Authorization")||"",token=auth.startsWith("Bearer ")?auth.slice(7):"";
+ if(!token)return null;
+ if(env.ADMIN_JWT_SECRET){
+  const p=token.split(".");
+  if(p.length===3)try{const k=await crypto.subtle.importKey("raw",enc.encode(env.ADMIN_JWT_SECRET),{name:"HMAC",hash:"SHA-256"},false,["verify"]);if(await crypto.subtle.verify("HMAC",k,unb64u(p[2]),enc.encode(p[0]+"."+p[1]))){const c=JSON.parse(new TextDecoder().decode(unb64u(p[1])));if(c.exp>Math.floor(Date.now()/1000)&&c.role==="admin")return c;}}catch{}
+ }
+ // Accept an authenticated Supabase session only after server-side token validation.
+ if(!env.SUPABASE_URL||!env.SUPABASE_PUBLISHABLE_KEY)return null;
+ try{
+  const r=await fetch(env.SUPABASE_URL.replace(/\\/$/,"")+"/auth/v1/user",{headers:{apikey:env.SUPABASE_PUBLISHABLE_KEY,Authorization:"Bearer "+token}});
+  if(!r.ok)return null;
+  const user=await r.json();
+  if(!user?.id||!user?.email)return null;
+  return {sub:user.id,role:"admin",email:user.email,auth_source:"supabase"};
+ }catch{return null;}
+}
