@@ -114,26 +114,28 @@ async function createOrder(request,env,headers) {
     const product=await env.DB.prepare("SELECT id,name,price,active FROM products WHERE id=? AND active=1").bind(String(productId)).first();
     if (!product) return out({error:"A selected product is unavailable"},409,headers);
     let price=Number(product.price);
-    const variantId=item.variant_id||item.variantId||null;
-    if (variantId) {
-      const variant=await env.DB.prepare("SELECT v.price,v.stock,v.active,m.product_id FROM product_model_variants v JOIN product_models m ON m.id=v.model_id WHERE v.id=? AND v.active=1 AND m.active=1").bind(String(variantId)).first();
-      if (!variant || variant.product_id!==product.id) return out({error:"A selected size or color is unavailable"},409,headers);
-      if (variant.price!==null && variant.price!==undefined) price=Number(variant.price);
-      if (Number(variant.stock)<qty) return out({error:"Insufficient stock for a selected variant"},409,headers);
+    let selectedVariantId=item.variant_id||item.variantId||null;
+    let variant=null;
+    if (selectedVariantId) {
+      variant=await env.DB.prepare("SELECT v.id,v.price,v.stock,v.active,m.product_id,m.id AS model_id FROM product_model_variants v JOIN product_models m ON m.id=v.model_id WHERE v.id=? AND v.active=1 AND m.active=1").bind(String(selectedVariantId)).first();
+      if (!variant || variant.product_id!==product.id || (modelId && variant.model_id!==modelId)) return out({error:"A selected size or color is unavailable"},409,headers);
     } else if (modelId) {
       if (item.size===undefined || item.size===null || String(item.size)==="")
         return out({error:"A size/variant must be selected for model-based products"},400,headers);
-      let q="SELECT stock,price FROM product_model_variants WHERE model_id=? AND active=1 AND size=?";
+      let q="SELECT v.id,v.price,v.stock,v.active,m.product_id,m.id AS model_id FROM product_model_variants v JOIN product_models m ON m.id=v.model_id WHERE v.model_id=? AND v.active=1 AND m.active=1 AND v.size=?";
       const params=[String(modelId),String(item.size)];
-      if (item.color!==undefined && item.color!==null) { q+=" AND color=?"; params.push(String(item.color)); }
-      const variant=await env.DB.prepare(q+" LIMIT 1").bind(...params).first();
-      if (!variant) return out({error:"A selected size or color is unavailable"},409,headers);
+      if (item.color!==undefined && item.color!==null) { q+=" AND v.color=?"; params.push(String(item.color)); }
+      variant=await env.DB.prepare(q+" LIMIT 1").bind(...params).first();
+      if (!variant || variant.product_id!==product.id) return out({error:"A selected size or color is unavailable"},409,headers);
+      selectedVariantId=variant.id;
+    }
+    if (variant) {
       if (Number(variant.stock)<qty) return out({error:"Insufficient stock for a selected variant"},409,headers);
       if (variant.price!==null && variant.price!==undefined) price=Number(variant.price);
     }
     if (!Number.isFinite(price)||price<0) return out({error:"Product price is invalid"},409,headers);
     const name=String(item.name||item.product_name||product.name).trim();
-    normalized.push({...item,product_id:product.id,qty,name,price});
+    normalized.push({...item,product_id:product.id,variant_id:selectedVariantId,model_id:modelId||variant?.model_id||null,qty,name,price});
     subtotal += qty*price;
   }
   if (!Number.isFinite(subtotal)||subtotal>10000000) return out({error:"Invalid order total"},400,headers);
@@ -145,9 +147,27 @@ async function createOrder(request,env,headers) {
   const id=crypto.randomUUID();
   const orderNumber="E"+Date.now().toString().slice(-8)+Math.floor(Math.random()*90+10);
   const customerData={...c,notes:b.customer_notes??c.notes??null,origin:c.origin||"catalog"};
-  await env.DB.prepare(
-    "INSERT INTO orders (id,order_number,customer_name,customer_id_number,customer_phone,customer_email,delivery_method,shipping_address,shipping_city,shipping_reference,payment_method,payment_status,subtotal,discount,shipping_cost,total,status,customer_notes,items,customer_data) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-  ).bind(id,orderNumber,customerName,b.customer_id_number??c.id_number??null,phone,b.customer_email??c.email??null,delivery,b.shipping_address??c.address??null,b.shipping_city??c.city??null,b.shipping_reference??null,payment,"pending",subtotal.toFixed(2),discount.toFixed(2),shipping.toFixed(2),total.toFixed(2),"Pendiente",b.customer_notes??c.notes??null,JSON.stringify(normalized),JSON.stringify(customerData)).run();
+  // Atomic inventory reservation: create the order only if every selected variant
+  // still has sufficient stock. Stock updates run only if the order row was created.
+  const variantNeeds=new Map();
+  for (const item of normalized) if (item.variant_id) {
+    const key=String(item.variant_id);
+    variantNeeds.set(key,(variantNeeds.get(key)||0)+item.qty);
+  }
+  const conditions=[];
+  const insertParams=[id,orderNumber,customerName,b.customer_id_number??c.id_number??null,phone,b.customer_email??c.email??null,delivery,b.shipping_address??c.address??null,b.shipping_city??c.city??null,b.shipping_reference??null,payment,"pending",subtotal.toFixed(2),discount.toFixed(2),shipping.toFixed(2),total.toFixed(2),"Pendiente",b.customer_notes??c.notes??null,JSON.stringify(normalized),JSON.stringify(customerData)];
+  for (const [variantId,qty] of variantNeeds) {
+    conditions.push("EXISTS (SELECT 1 FROM product_model_variants WHERE id=? AND active=1 AND stock>=?)");
+    insertParams.push(variantId,qty);
+  }
+  const insertSql="INSERT INTO orders (id,order_number,customer_name,customer_id_number,customer_phone,customer_email,delivery_method,shipping_address,shipping_city,shipping_reference,payment_method,payment_status,subtotal,discount,shipping_cost,total,status,customer_notes,items,customer_data) SELECT "+Array(20).fill("?").join(",")+" WHERE "+(conditions.length?conditions.join(" AND "):"1=1");
+  const batch=[env.DB.prepare(insertSql).bind(...insertParams)];
+  for (const [variantId,qty] of variantNeeds) {
+    batch.push(env.DB.prepare("UPDATE product_model_variants SET stock=stock-?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND EXISTS (SELECT 1 FROM orders WHERE id=?)").bind(qty,variantId,id));
+  }
+  const result=await env.DB.batch(batch);
+  const created=await env.DB.prepare("SELECT id FROM orders WHERE id=?").bind(id).first();
+  if (!created) return out({error:"Stock changed during checkout or a selected variant is unavailable. Refresh the catalog and try again."},409,headers);
   return out({data:{id,order_number:orderNumber,status:"Pendiente",payment_status:"pending",subtotal:subtotal.toFixed(2),discount:discount.toFixed(2),shipping_cost:shipping.toFixed(2),total:total.toFixed(2)}},201,headers);
 }
 
