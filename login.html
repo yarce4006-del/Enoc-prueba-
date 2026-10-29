@@ -15,27 +15,6 @@ document.getElementById('loginForm').addEventListener('submit',async e=>{
    const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
    if(error) throw error;
    if(!data?.session) throw new Error('Supabase no creó una sesión.');
-   // API v2: intenta obtener el token independiente de Cloudflare para el módulo migrado.
-   // Si la API todavía no está desplegada/configurada, se conserva el acceso legado y se informa en el panel.
-   try {
-     const apiBase = window.ENOC_API_V2_URL || '';
-     if (!apiBase) throw new Error('ENOC_API_V2_URL no está configurada');
-     const apiResponse = await fetch(apiBase.replace(/\\/$/, '') + '/api/admin/login', {
-       method:'POST', headers:{'Content-Type':'application/json'},
-       body:JSON.stringify({username:email,password})
-     });
-     const apiResult = await apiResponse.json().catch(()=>({}));
-     if (apiResponse.ok && apiResult?.data?.access_token) {
-       sessionStorage.setItem('enoc_api_v2_token', apiResult.data.access_token);
-       sessionStorage.setItem('enoc_api_v2_enabled','1');
-     } else {
-       sessionStorage.removeItem('enoc_api_v2_token');
-       sessionStorage.setItem('enoc_api_v2_enabled','0');
-     }
-   } catch (_) {
-     sessionStorage.removeItem('enoc_api_v2_token');
-     sessionStorage.setItem('enoc_api_v2_enabled','0');
-   }
    sessionStorage.setItem('enoc_admin_session','1');
    location.replace('admin.html');
  }catch(error){
