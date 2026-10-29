@@ -1,28 +1,28 @@
-# ENOC — rutas Cashea en API v2
+# Estado de conexión Cashea / resguardos fiscales — API v2
 
-Rama: `migration/cloudflare-no-supabase`  
-Archivo de implementación: `enoc-catalog-api-v2-candidate.js`
+## Worker de integración
+- Worker: `enoc-cashea-api-v2`
+- URL: `https://enoc-cashea-api-v2.enoc365-image-migration.workers.dev`
+- Health: `GET /health`
+- D1 enlazada: `enoc-production-migration`
+- Rama de código: `migration/cloudflare-no-supabase`
 
-Todas las rutas siguientes requieren JWT de administrador emitido por `POST /api/admin/login`.
+## Cambios en esta rama
+- `migration/enoc-catalog-api-v2-candidate.js`: rutas de operaciones, artículos, pagos, cambios y resguardos fiscales; validación de sesión Supabase del lado servidor.
+- `admin.html`: lecturas de operaciones, artículos, pagos y resguardos por API; llamadas de escritura apuntan a las rutas API.
+- `login.html`: conserva el inicio de sesión Supabase existente.
 
-## Operaciones
+## Protección activa
+Las escrituras de Cashea están bloqueadas por defecto con HTTP 503 mientras no se valide en un entorno aislado. No activar `ENABLE_CASHEA_MUTATIONS=true` contra D1 de producción para pruebas.
 
-- `GET /api/admin/cashea/operations`: lista operaciones.
-- `GET /api/admin/cashea/items?operation_id=...`: consulta artículos de una operación.
-- `POST /api/admin/cashea/confirm`: cuerpo `{"operation_id":"..." }`; valida artículos y stock, calcula financiado/comisión/neto y confirma.
-- `POST /api/admin/cashea/exchange`: cuerpo `{"operation_id":"...","item_id":"...","new_variant_id":"...","reason":"..." }`; registra historial y ajusta inventario.
-- `GET /api/admin/cashea/payments`: consulta lotes, vínculos y reversos.
-- `POST /api/admin/cashea/payments/batches`: cuerpo `{"payment_date":"YYYY-MM-DD","amount_received":0,"currency":"USD","operation_ids":["..."],"reference":null,"notes":null}`; comprueba importe neto esperado y registra el lote.
-- `POST /api/admin/cashea/payments/reverse`: cuerpo `{"operation_id":"...","reason":"..." }`; solo permite reversar operaciones con un lote y sin liquidación registrada.
+La API exige además un rol `admin` en los metadatos del usuario Supabase o que su correo esté en `ADMIN_ALLOWED_EMAILS`. La variable de lista blanca no se ha configurado porque el correo administrador autorizado no estaba disponible durante la implementación. Hasta que se configure, el acceso administrativo a la API debe fallar cerrado.
 
-## Resguardos fiscales
+## Para completar la activación
+1. Configurar `ADMIN_ALLOWED_EMAILS` con el correo real autorizado (o verificar que el usuario tenga rol admin en sus metadatos).
+2. Crear una D1 de staging y copiar el esquema/datos necesarios de Cashea, productos, modelos y variantes.
+3. Probar creación/confirmación de venta, actualización de inventario, cambio de artículos, pagos, reversos, resguardos y declaraciones en staging.
+4. Corregir cualquier diferencia entre la lógica histórica de las RPC de Supabase y la implementación API.
+5. Solo después de aprobar las pruebas, decidir la activación controlada de escritura.
 
-- `GET /api/admin/cashea/fiscal`: consulta resguardos y declaraciones.
-- `POST /api/admin/cashea/fiscal/reserve`: cuerpo `{"operation_id":"...","bcv_rate":0,"rate_date":"YYYY-MM-DD","rate_source":"BCV verificado","notes":null}`. Requiere tasa positiva y no permite duplicar el resguardo de una operación. Calcula total Bs = USD × tasa; base imponible = total Bs / 1.16; IVA = base × 16%; patente = total Bs × 2%.
-- `POST /api/admin/cashea/fiscal/declarations`: cuerpo `{"period_start":"YYYY-MM-DD","period_end":"YYYY-MM-DD","reserve_ids":["..."],"reference":null,"notes":null}`. Solo admite resguardos registrados, no declarados y dentro del período.
-
-## Advertencias que siguen aplicando
-
-Este commit implementa rutas de backend; no cambia el `admin.html` publicado ni conecta automáticamente sus botones a la nueva API. La versión actual del panel sigue invocando RPCs de Supabase. Por eso no debe anunciarse el módulo como migrado ni desplegarse como sustituto funcional del panel hasta terminar la capa de integración del frontend y verificar la semántica de los procedimientos heredados.
-
-La tasa BCV se proporciona explícitamente; el endpoint no consulta ni verifica por sí mismo una fuente oficial. No usar tasas inventadas ni declarar montos sin revisar la tasa y el tratamiento fiscal aplicable.
+## Importante
+El Worker está desplegado, pero esto no significa que el panel de producción esté migrado. El archivo `admin.html` modificado vive en esta rama de migración; no se publicó en Netlify ni se modificó la rama principal. La API se encuentra protegida y no debe considerarse lista para operaciones fiscales reales hasta completar la validación anterior.
